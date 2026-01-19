@@ -245,4 +245,3 @@ with col_d2:
         )
     except Exception as e:
         st.error(f"Error generando PDF: {e}")
-        
