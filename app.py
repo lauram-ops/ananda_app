@@ -217,7 +217,7 @@ def create_pdf():
     pdf.ln(10)
     pdf.set_font('Arial', 'I', 11)
     pdf.set_text_color(100)
-    pdf.multi_cell(0, 8, f'Nota: Al adquirir en esta etapa de construccion, obtienes un precio preferencial. El valor comercial proyectado a la entrega (Lista 10) es de ${precio_final_mercado:,.2f}, lo que representa una plusvalia inmediata de ${plusvalia:,.2f} a tu favor.')
+    pdf.multi_cell(0, 8, f'Nota: Al adquirir en esta etapa, obtienes precio preferencial. El valor proyectado a la entrega (Lista 10) es ${precio_final_mercado:,.2f}, representando una plusvalia inmediata de ${plusvalia:,.2f}.')
     
     # Amenidades
     pdf.ln(10)
@@ -240,4 +240,9 @@ with col_d2:
         st.download_button(
             label="DESCARGAR PDF",
             data=pdf_bytes,
-            
+            file_name=f"Cotizacion_Casa_Ananda_{lote_label}.pdf",
+            mime="application/pdf"
+        )
+    except Exception as e:
+        st.error(f"Error generando PDF: {e}")
+        
