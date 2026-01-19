@@ -27,8 +27,8 @@ st.markdown("""
 
     /* Tabla Comparativa */
     .comp-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
-    .comp-table th { background-color: #004e92; color: white; padding: 12px; text-align: left; }
-    .comp-table td { border-bottom: 1px solid #ddd; padding: 10px; text-align: left; color: #333; }
+    .comp-table th { background-color: #004e92; color: white; padding: 12px; text-align: center; }
+    .comp-table td { border-bottom: 1px solid #ddd; padding: 10px; text-align: center; color: #333; }
     .highlight { background-color: #e3f2fd; font-weight: bold; color: #004e92; }
     
     .stButton>button { background-color: #004e92; color: white; font-weight: bold; height: 50px; width: 100%; border-radius: 8px;}
@@ -79,7 +79,6 @@ def load_data():
 
 df_raw = load_data()
 if df_raw is None:
-    st.error("⚠️ Usando datos base.")
     df_raw = pd.DataFrame({'lote': range(1, 45), 'status': ['Disponible']*44})
 
 # --- 2. SIDEBAR ---
@@ -119,7 +118,7 @@ plusvalia = precio_final_mercado - precio_lista_actual
 st.sidebar.markdown("---")
 st.sidebar.info(f"📋 **Lote {num_lote_selec}:**\n- Terreno: {m2_terreno:.0f} m²\n- Construcción: {m2_construccion:.0f} m²")
 
-# --- 3. PANEL SUPERIOR (CONTADOR) ---
+# --- 3. PANEL SUPERIOR ---
 col_logo, col_title = st.columns([1, 4])
 with col_title:
     st.title(f"Residencia Ananda | Lote {num_lote_selec}")
@@ -158,20 +157,19 @@ with c3:
         <small>Tu ganancia por comprar hoy</small>
     </div>""", unsafe_allow_html=True)
 
-# --- 4. COMPARATIVA VISUAL (MEJORADA) ---
+# --- 4. COMPARATIVA VISUAL (PRECIO M2 INCLUIDO) ---
 st.markdown("---")
-st.header("🏆 El Reto del Metro Cuadrado")
-st.caption("Comparativa real basada en precios de mercado actuales (PPK Lantana, HAX, Azaluma).")
+st.header("🏆 Análisis de Competencia")
+st.caption("Comparativa real basada en precios de mercado actuales.")
 
-# PREPARACIÓN DE DATOS COMPETENCIA
+# Datos
 precio_m2_ananda = precio_lista_actual / m2_construccion if m2_construccion > 0 else 0
 
-# Datos aproximados de los PDFs
 data_comp = [
-    {"Proyecto": "ANANDA (Casa)", "Precio": precio_lista_actual, "M2": m2_construccion, "Tipo": "Casa", "Privacidad": "Alta"},
-    {"Proyecto": "Punta Península (Lantana)", "Precio": 4850000, "M2": 100, "Tipo": "Depto", "Privacidad": "Baja"},
-    {"Proyecto": "HAX (Condo)", "Precio": 3600000, "M2": 75, "Tipo": "Depto", "Privacidad": "Baja"},
-    {"Proyecto": "Azaluma", "Precio": 4100000, "M2": 85, "Tipo": "Depto", "Privacidad": "Baja"},
+    {"Proyecto": "ANANDA (Casa)", "Precio": precio_lista_actual, "M2": m2_construccion, "Tipo": "Casa"},
+    {"Proyecto": "Punta Península (Lantana)", "Precio": 4850000, "M2": 100, "Tipo": "Depto"}, # ~48k/m2
+    {"Proyecto": "HAX (Condo)", "Precio": 3600000, "M2": 70, "Tipo": "Depto"}, # ~51k/m2
+    {"Proyecto": "Azaluma", "Precio": 4100000, "M2": 85, "Tipo": "Depto"}, # ~48k/m2
 ]
 df_comp = pd.DataFrame(data_comp)
 df_comp['Precio_M2'] = df_comp['Precio'] / df_comp['M2']
@@ -180,71 +178,73 @@ col_scatter, col_bar = st.columns([2, 1])
 
 with col_scatter:
     st.subheader("Mapa de Valor: Tamaño vs. Precio")
-    # Gráfica de Dispersión (Scatter)
-    fig_sc = px.scatter(df_comp, x="Precio", y="M2", 
-                     color="Tipo", size="M2", 
-                     text="Proyecto",
+    fig_sc = px.scatter(df_comp, x="Precio", y="M2", color="Tipo", size="M2", text="Proyecto",
                      color_discrete_map={"Casa": "#004e92", "Depto": "#ef553b"},
                      title="Busca la esquina superior izquierda (Más M² por menos $)")
-    
     fig_sc.update_traces(textposition='top center', marker=dict(size=25, line=dict(width=2, color='DarkSlateGrey')))
-    fig_sc.add_shape(type="rect", x0=precio_lista_actual*0.9, y0=m2_construccion*0.9, x1=precio_lista_actual*1.1, y1=m2_construccion*1.1,
-                     line=dict(color="Green"), fillcolor="rgba(0,255,0,0.1)")
     fig_sc.update_layout(height=400, plot_bgcolor='rgba(0,0,0,0)')
     st.plotly_chart(fig_sc, use_container_width=True)
 
 with col_bar:
-    st.subheader("Precio Real por M²")
-    # Bar Chart ordenado
-    df_bar = df_comp.sort_values('Precio_M2')
+    st.subheader("Tabla Comparativa M²")
+    # Generamos HTML de la tabla para control total visual
+    rows_html = ""
+    for index, row in df_comp.sort_values('Precio_M2').iterrows():
+        style = 'style="background-color:#e3f2fd; font-weight:bold;"' if row['Proyecto'] == 'ANANDA (Casa)' else ''
+        rows_html += f"<tr {style}><td>{row['Proyecto']}</td><td>${row['Precio_M2']:,.0f}</td></tr>"
+    
+    st.markdown(f"""
+    <table class="comp-table">
+        <tr><th>Proyecto</th><th>Precio por M²</th></tr>
+        {rows_html}
+    </table>
+    """, unsafe_allow_html=True)
+    
+    # Gráfica de barras simple abajo
     fig_bar = go.Figure(go.Bar(
-        x=df_bar['Proyecto'], y=df_bar['Precio_M2'],
-        marker_color=['#28a745' if p == 'ANANDA (Casa)' else '#d62728' for p in df_bar['Proyecto']],
-        text=[f"${x:,.0f}" for x in df_bar['Precio_M2']],
+        x=df_comp.sort_values('Precio_M2')['Proyecto'], 
+        y=df_comp.sort_values('Precio_M2')['Precio_M2'],
+        marker_color=['#28a745' if 'ANANDA' in p else '#d62728' for p in df_comp.sort_values('Precio_M2')['Proyecto']],
+        text=[f"${x/1000:,.0f}k" for x in df_comp.sort_values('Precio_M2')['Precio_M2']],
         textposition='auto'
     ))
-    fig_bar.update_layout(height=400, title="", plot_bgcolor='rgba(0,0,0,0)', showlegend=False)
+    fig_bar.update_layout(height=250, margin=dict(t=10,b=10), plot_bgcolor='rgba(0,0,0,0)', showlegend=False)
     st.plotly_chart(fig_bar, use_container_width=True)
 
-# COMPARATIVA DE ESTILO DE VIDA (TEXTO/ICONOS)
-st.markdown("---")
-col_vis1, col_vis2 = st.columns(2)
-
-with col_vis1:
-    st.subheader("🏢 Vivir en Departamento")
-    st.markdown("""
-    * ❌ **Vecino Arriba:** Ruidos de pasos y muebles.
-    * ❌ **Vecino Abajo:** Quejas si tus hijos corren.
-    * ❌ **Vecino al Lado:** Pared con pared (ruido TV).
-    * ❌ **Cochera:** Generalmente común o lejos.
-    * ⚠️ **Cuotas:** Mantenimiento de elevadores y edificios es alto.
-    """)
-
-with col_vis2:
-    st.subheader("🏡 Vivir en ANANDA (Casa)")
-    st.markdown("""
-    * ✅ **Cielo Abierto:** Nadie arriba de ti.
-    * ✅ **Tierra Firme:** Nadie abajo de ti.
-    * ✅ **Muros Separados:** Pasillos laterales (sin pared compartida).
-    * ✅ **Cochera Privada:** Frente a tu puerta.
-    * ✅ **Plusvalía:** Eres dueño del **terreno**, no solo del aire.
-    """)
-
-# --- 5. RENTAS ---
+# --- 5. RENTAS (CON COMISIÓN AJUSTABLE) ---
 st.markdown("---")
 st.header("📈 Negocio Patrimonial")
+st.caption("Proyección de ingresos netos ajustando costos de administración.")
+
 col_r1, col_r2 = st.columns([1, 2])
 with col_r1:
+    st.markdown("#### Configuración")
     tarifa = st.number_input("Tarifa Noche:", value=4500, step=500)
-    ocupacion = st.slider("Ocupación %:", 30, 70, 45) / 100
-    mto = st.number_input("Mantenimiento Mensual:", value=2000)
+    ocupacion = st.slider("Ocupación Anual %:", 20, 80, 45) / 100
+    
+    st.markdown("#### Costos")
+    # AQUI ESTA EL SLIDER QUE PEDISTE
+    comision_pct = st.slider("Comisión Administración (%):", 15, 35, 25) / 100
+    mto_mensual = st.number_input("Mantenimiento Mensual:", value=2000)
+
 with col_r2:
-    ingreso = tarifa * 365 * ocupacion
-    gastos = (ingreso * 0.25) + (mto * 12)
-    neto = ingreso - gastos
-    st.metric("Ingreso Neto Anual", f"${neto:,.0f}")
-    st.progress(min(100, int((neto/precio_lista_actual)*1000))) 
-    st.caption("Barra de Rendimiento vs Inversión")
+    ingreso_bruto = tarifa * 365 * ocupacion
+    pago_admin = ingreso_bruto * comision_pct
+    pago_mto = mto_mensual * 12
+    total_gastos = pago_admin + pago_mto
+    neto = ingreso_bruto - total_gastos
+    
+    st.metric("Ingreso Neto Anual (Bolsillo)", f"${neto:,.0f}", delta="Libre de Polvo y Paja")
+    
+    # Gráfica de Dona para ver a dónde se va el dinero
+    fig_pie = go.Figure(data=[go.Pie(
+        labels=['Tu Ganancia Neta', 'Comisión Admin', 'Mantenimiento'],
+        values=[neto, pago_admin, pago_mto],
+        hole=.4,
+        marker_colors=['#28a745', '#ef553b', '#ffa600']
+    )])
+    fig_pie.update_layout(height=300, margin=dict(t=30, b=10, l=10, r=10), title="Distribución del Ingreso")
+    st.plotly_chart(fig_pie, use_container_width=True)
 
 # --- 6. PDF ---
 class PDF(FPDF):
@@ -288,8 +288,8 @@ def create_pdf():
     pdf.set_font('Arial', '', 12)
     pdf.cell(100, 10, 'Precio M2 ANANDA:', 1, 0)
     pdf.cell(60, 10, f'${precio_m2_ananda:,.2f}', 1, 1, 'R')
-    pdf.cell(100, 10, 'Promedio M2 Condos:', 1, 0)
-    pdf.cell(60, 10, f'$46,000.00', 1, 1, 'R') # Promedio mercado
+    pdf.cell(100, 10, 'Promedio M2 Competencia:', 1, 0)
+    pdf.cell(60, 10, f'$49,000.00', 1, 1, 'R')
 
     return pdf.output(dest='S').encode('latin-1')
 
