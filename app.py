@@ -6,7 +6,7 @@ from fpdf import FPDF
 import base64
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Ananda Kino | Cotizador PRO", page_icon="🏠", layout="wide")
+st.set_page_config(page_title="Ananda Kino | Cotizador", page_icon="🏠", layout="wide")
 
 # --- ESTILOS VISUALES ---
 st.markdown("""
@@ -20,54 +20,64 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 1. CARGA DE DATOS INTELIGENTE ---
+# --- 1. CARGA DE DATOS INTELIGENTE (ESCANER DE FILAS) ---
 @st.cache_data
 def load_data():
     file_name = "precios.csv"
-    
-    # 1. Intentar cargar el archivo (Detectando separador , o ;)
     try:
-        # Prueba con motor python para autodetectar separador
-        df = pd.read_csv(file_name, sep=None, engine='python')
-    except:
-        # Si falla, devuelve Dummy y aviso
-        return None, False
-
-    # 2. Limpieza de nombres de columnas
-    df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('.', '').str.replace('°', '')
-    
-    # 3. BUSCADOR INTELIGENTE DE COLUMNAS (Mapeo)
-    # Buscamos cuál columna es la del 'Lote'
-    col_lote = None
-    posibles_lote = ['lote', 'lotes', 'no_lote', 'num_lote', 'unidad', 'numero', 'id']
-    for posible in posibles_lote:
-        if posible in df.columns:
-            col_lote = posible
-            break
+        # INTENTO 1: Leer normal
+        df = pd.read_csv(file_name)
+        
+        # ESCANER: ¿Alguna columna se llama parecida a 'Lote'?
+        # A veces el título está en la fila 0, 1, 2 o 3. Vamos a buscarlo.
+        fila_encabezado = -1
+        
+        # Si la lectura normal no trajo 'lote', buscamos en las primeras 5 filas
+        columnas_actuales = [str(c).lower() for c in df.columns]
+        if not any('lote' in c for c in columnas_actuales):
+            # Recorremos diferentes opciones de "header" (filas vacías al inicio)
+            for i in range(1, 6):
+                df_temp = pd.read_csv(file_name, header=i)
+                cols_temp = [str(c).lower() for c in df_temp.columns]
+                if any('lote' in c for c in cols_temp):
+                    df = df_temp # ¡Encontramos la fila correcta!
+                    break
+        
+        # LIMPIEZA DE COLUMNAS (Estandarizar nombres)
+        df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('.', '').str.replace('°', '').str.replace('no_', '')
+        
+        # RENOMBRADO FINAL (Asegurar que exista 'lote')
+        # Buscamos columnas como 'lote', 'lotes', 'unidad', 'numero' y la renombramos a 'lote'
+        mapa_cols = {}
+        for col in df.columns:
+            if 'lote' in col or 'unidad' in col:
+                mapa_cols[col] = 'lote'
+                break # Solo tomamos la primera que encuentre
+        
+        if mapa_cols:
+            df.rename(columns=mapa_cols, inplace=True)
             
-    # Si encontramos una variante, la renombramos a 'lote' para estandarizar
-    if col_lote and col_lote != 'lote':
-        df.rename(columns={col_lote: 'lote'}, inplace=True)
+        return df
+    except Exception as e:
+        st.error(f"Error leyendo archivo: {e}")
+        return None
+
+df_raw = load_data()
+
+# --- DIAGNÓSTICO DE ERRORES (PARA QUE NO SE ROMPA LA APP) ---
+if df_raw is None or 'lote' not in df_raw.columns:
+    st.error("⚠️ PROBLEMA CON EL ARCHIVO: No encuentro la columna 'Lote'.")
+    st.warning("Esto suele pasar si el Excel tiene títulos arriba de la tabla.")
     
-    # Si de plano no encontró nada parecido a lote, avisar
-    if 'lote' not in df.columns:
-        st.error(f"⚠️ ERROR DE FORMATO: No encuentro una columna que diga 'Lote'. Las columnas que veo son: {list(df.columns)}")
-        return None, False
-
-    return df, True
-
-df_raw, archivo_cargado = load_data()
-
-# --- SI FALLA LA CARGA, USAR DATOS DE RESPALDO PARA QUE NO TRUENE ---
-if not archivo_cargado or df_raw is None:
-    df_raw = pd.DataFrame({
-        'lote': range(1, 45),
-        'm2': [200 + (i*2) for i in range(44)],
-        'm2_construccion': [160] * 44,
-        'precio_lista_1': [900000 + (i*10000) for i in range(44)]
-    })
-    # Solo mostramos el error si el usuario NO es un visitante (opcional)
-    # st.sidebar.warning("Usando datos simulados por error en CSV.")
+    if df_raw is not None:
+        st.write("👀 Esto es lo que estoy leyendo de tu archivo (primeras 5 filas):")
+        st.dataframe(df_raw.head())
+        st.write("Columnas detectadas:", list(df_raw.columns))
+        st.info("Solución: Abre tu Excel, borra las filas de títulos (deja solo la tabla) y vuelve a subirlo como 'precios.csv'.")
+    else:
+        st.info("No pude leer el archivo 'precios.csv'. Revisa que el nombre sea correcto.")
+    
+    st.stop() # Detiene la app aquí para que no salga el error feo de código
 
 # --- 2. SIDEBAR ---
 try:
@@ -75,7 +85,7 @@ try:
 except:
     st.sidebar.header("🏠 Ananda Residencial")
 
-st.sidebar.header("1. Configuración")
+st.sidebar.header("1. Configuración Propiedad")
 
 # Selectores
 lista_seleccionada = st.sidebar.selectbox("Lista de Precio Vigente:", range(1, 11), index=0)
@@ -100,7 +110,7 @@ precio_terreno_actual = precio_base_lista1 * (1 + (incremento_pct * (lista_selec
 precio_terreno_futuro = precio_base_lista1 * (1 + (incremento_pct * 9)) # Lista 10
 
 st.sidebar.markdown("---")
-st.sidebar.header("2. Casa Terminada")
+st.sidebar.header("2. Construcción")
 st.sidebar.caption("Se entrega residencia construida (Obra Civil + Acabados).")
 
 costo_m2_const = st.sidebar.number_input("Valor Construcción por m²:", value=14500, step=500)
