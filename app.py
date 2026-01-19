@@ -8,7 +8,7 @@ import base64
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Ananda Kino | Cotizador Residencial", page_icon="🏠", layout="wide")
 
-# --- ESTILOS ---
+# --- ESTILOS VISUALES ---
 st.markdown("""
     <style>
     [data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #F9FCFF 0%, #FFFFFF 100%); }
@@ -20,26 +20,25 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 1. CARGA DE DATOS (AHORA BUSCA PRECIOS.CSV) ---
+# --- 1. CARGA DE DATOS (SILENCIOSA) ---
 @st.cache_data
 def load_data():
-    # ¡AQUÍ ESTÁ LA CORRECCIÓN! Buscamos el nombre corto
+    # Asegúrate que tu archivo se llame precios.csv
     file_name = "precios.csv"
     try:
         df = pd.read_csv(file_name)
-        # Limpieza de columnas
         df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('.', '')
-        return df, True 
+        return df
     except:
-        # Datos simulados (SOLO SI FALLA)
+        # Si falla, usa datos dummy sin avisar
         return pd.DataFrame({
             'lote': range(1, 45),
             'm2': [200 + (i*2) for i in range(44)],
             'm2_construccion': [160] * 44,
             'precio_lista_1': [900000 + (i*10000) for i in range(44)]
-        }), False
+        })
 
-df_raw, archivo_cargado = load_data()
+df_raw = load_data()
 
 # --- 2. SIDEBAR ---
 try:
@@ -47,13 +46,7 @@ try:
 except:
     st.sidebar.header("🏠 Ananda Residencial")
 
-# Indicador de Carga
-if archivo_cargado:
-    st.sidebar.success("🟢 Lista de Precios Cargada")
-else:
-    st.sidebar.error("🔴 Error: No encuentro 'precios.csv'")
-
-st.sidebar.header("1. Configuración")
+st.sidebar.header("1. Configuración Propiedad")
 
 # Selectores
 lista_seleccionada = st.sidebar.selectbox("Lista de Precio Vigente:", range(1, 11), index=0)
@@ -78,7 +71,7 @@ precio_terreno_actual = precio_base_lista1 * (1 + (incremento_pct * (lista_selec
 precio_terreno_futuro = precio_base_lista1 * (1 + (incremento_pct * 9)) # Lista 10
 
 st.sidebar.markdown("---")
-st.sidebar.header("2. Casa Terminada")
+st.sidebar.header("2. Construcción")
 st.sidebar.caption("Se entrega residencia construida (Obra Civil + Acabados).")
 
 costo_m2_const = st.sidebar.number_input("Valor Construcción por m²:", value=14500, step=500)
