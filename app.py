@@ -25,9 +25,8 @@ st.markdown("""
     .comp-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
     .comp-table th { background-color: #004e92; color: white; padding: 12px; text-align: center; }
     .comp-table td { border-bottom: 1px solid #ddd; padding: 10px; text-align: center; color: #333; }
-    .feature-table td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
-    .check { color: green; font-weight: bold; }
-    .cross { color: red; font-weight: bold; }
+    .feature-table td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; font-size: 15px; }
+    .check { color: green; font-weight: bold; font-size: 1.1em;}
     
     /* Ficha Técnica */
     .specs-box { background-color: #e3f2fd; padding: 15px; border-radius: 10px; border-left: 5px solid #004e92; margin-bottom: 20px; }
@@ -128,7 +127,7 @@ st.sidebar.info(f"📋 **Ficha Lote {num_lote_selec}:**\n- Terreno: {m2_terreno:
 st.title(f"Residencia Ananda | Lote {num_lote_selec}")
 if "Vendido" in lote_str_selec: st.warning("⛔ LOTE VENDIDO")
 
-# BLOQUE FICHA TÉCNICA (NUEVO)
+# BLOQUE FICHA TÉCNICA (SIN MINISPLITS)
 st.markdown("""
 <div class="specs-box">
     <strong>🏡 MODELO ANANDA (Casa Independiente)</strong><br><br>
@@ -138,7 +137,6 @@ st.markdown("""
         <li class="specs-item">🚗 Cochera Doble</li>
         <li class="specs-item">🍳 Cocina con Barra</li>
         <li class="specs-item">👕 Closets</li>
-        <li class="specs-item">❄️ Minisplits</li>
         <li class="specs-item">🪟 Cancelería</li>
         <li class="specs-item">✨ Pisos Incluidos</li>
     </ul>
@@ -159,31 +157,52 @@ with c1: st.markdown(f"""<div class="metric-card"><div>Inversión Inicial</div><
 with c2: st.markdown(f"""<div class="metric-card" style="border:2px solid #ffc107; background:#fffdf5"><div>Valor Entrega</div><div class="future-number">${precio_final_mercado:,.0f}</div><small>Feb 2027</small></div>""", unsafe_allow_html=True)
 with c3: st.markdown(f"""<div class="metric-card" style="background:#f0fff4; border:2px solid #28a745;"><div>Plusvalía Ganada</div><div class="big-number" style="color:#28a745">+${plusvalia_preventa:,.0f}</div><small>Al cierre de preventa</small></div>""", unsafe_allow_html=True)
 
-# --- 4. PROYECCIÓN PATRIMONIAL (CON TABLA ANUAL) ---
+# --- 4. PROYECCIÓN PATRIMONIAL (GRAFICA CON RENTAS + TABLA SOLO VALOR) ---
 st.markdown("---")
 st.header("📈 Tu Patrimonio en 5 Años (2028-2032)")
-st.caption("Crecimiento de valor del inmueble anualizado.")
+st.caption("Gráfica: Valor Propiedad + Rentas Acumuladas | Tabla: Valor Propiedad.")
 
-years = range(2028, 2033)
+# Variables estimadas para la gráfica (detalle en sección rentas)
+tarifa_base = 4500
+ocupacion_base = 0.45
+inflacion = 0.05
 plusvalia_anual = 0.08
+years = range(2028, 2033)
+
 data_proy = []
 val_prop = precio_final_mercado
+acum_rentas = 0
 
 for i, y in enumerate(years):
     val_prop = val_prop * (1 + plusvalia_anual)
-    data_proy.append({"Año": y, "Valor Propiedad": val_prop, "Crecimiento": f"+8%"})
+    
+    # Renta simple para la visualización del gráfico
+    t_act = tarifa_base * ((1+inflacion)**i)
+    neto_anual_est = (t_act * 365 * ocupacion_base) * 0.70 
+    acum_rentas += neto_anual_est
+    
+    data_proy.append({
+        "Año": y, 
+        "Valor Propiedad": val_prop, 
+        "Renta Acumulada": acum_rentas,
+        "Total Patrimonio": val_prop + acum_rentas
+    })
 
 df_proy = pd.DataFrame(data_proy)
 
 col_graf_plus, col_tab_plus = st.columns([2, 1])
 
 with col_graf_plus:
-    fig_area = px.area(df_proy, x="Año", y="Valor Propiedad", title="Evolución del Valor (Plusvalía)")
-    fig_area.update_traces(line_color='#004e92')
+    # GRÁFICA: VALOR + RENTAS
+    fig_area = px.area(df_proy, x="Año", y=["Valor Propiedad", "Renta Acumulada"], 
+                      title="Crecimiento Total (Plusvalía + Rentas)",
+                      color_discrete_map={"Valor Propiedad":"#004e92", "Renta Acumulada":"#28a745"})
+    fig_area.update_layout(plot_bgcolor='rgba(0,0,0,0)', legend_title_text='')
     st.plotly_chart(fig_area, use_container_width=True)
 
 with col_tab_plus:
-    st.subheader("Desglose Anual")
+    # TABLA: SOLO VALOR PROPIEDAD (AÑADIDO AÑO A AÑO)
+    st.subheader("Evolución Valor Casa")
     st.markdown(f"""
     <table class="comp-table">
         <tr><th>Año</th><th>Valor Propiedad</th></tr>
@@ -191,10 +210,10 @@ with col_tab_plus:
     </table>
     """, unsafe_allow_html=True)
 
-# --- 5. ANANDA VS EL MERCADO ---
+# --- 5. ANANDA VS EL MERCADO (CARACTERISTICAS SOLO ANANDA) ---
 st.markdown("---")
 st.header("🏆 Ananda vs Competencia")
-st.caption("Comparativa directa contra desarrollos verticales (Condos).")
+st.caption("Comparativa de valor y características.")
 
 precio_m2_ananda = precio_lista_actual / m2_construccion if m2_construccion > 0 else 0
 data_comp = [
@@ -208,20 +227,21 @@ df_comp = pd.DataFrame(data_comp)
 col_feat, col_price = st.columns([1, 1])
 
 with col_feat:
-    st.subheader("Diferenciadores Clave")
+    st.subheader("Características Exclusivas")
+    # TABLA SOLO DE ANANDA (SIN COLUMNA CONDOS)
     st.markdown("""
     <table class="comp-table feature-table">
-        <tr><th>Característica</th><th>🏡 ANANDA</th><th>🏢 CONDOS (Otros)</th></tr>
-        <tr><td><b>Precio por M²</b></td><td><span class='check'>Bajo (Mejor Inversión)</span></td><td><span class='cross'>Alto (Sobreprecio)</span></td></tr>
-        <tr><td><b>Privacidad</b></td><td><span class='check'>Total (Sin pared compartida)</span></td><td><span class='cross'>Baja (Muros compartidos)</span></td></tr>
-        <tr><td><b>Cochera</b></td><td><span class='check'>Privada Doble (Sin Techar)</span></td><td><span class='cross'>Estacionamiento Común</span></td></tr>
-        <tr><td><b>Mantenimiento</b></td><td><span class='check'>Bajo (No frente al mar)</span></td><td><span class='cross'>Alto (Corrosión/Elevadores)</span></td></tr>
-        <tr><td><b>Propiedad</b></td><td><span class='check'>Dueño de la Tierra + Casa</span></td><td><span class='cross'>Solo indiviso (Aire)</span></td></tr>
+        <tr><th>Ventajas de tu Casa en Ananda</th></tr>
+        <tr><td><span class='check'>✔</span> Precio por M² más bajo del mercado</td></tr>
+        <tr><td><span class='check'>✔</span> Privacidad Total (Sin pared compartida)</td></tr>
+        <tr><td><span class='check'>✔</span> Cochera Doble</td></tr>
+        <tr><td><span class='check'>✔</span> Mantenimiento Bajo (No frente al mar)</td></tr>
+        <tr><td><span class='check'>✔</span> Dueño de la Tierra + Construcción</td></tr>
     </table>
     """, unsafe_allow_html=True)
 
 with col_price:
-    st.subheader("Costo Real por M²")
+    st.subheader("Comparativa Precio por M²")
     fig_bar = go.Figure(go.Bar(
         x=df_comp.sort_values('PrecioM2')['Proyecto'], 
         y=df_comp.sort_values('PrecioM2')['PrecioM2'],
@@ -325,23 +345,24 @@ def create_pdf():
         pdf.cell(80, 8, str(row['Año']), 1, 0, 'C')
         pdf.cell(80, 8, f"${row['Valor Propiedad']:,.0f}", 1, 1, 'R')
 
-    # 4. Competencia
+    # 4. Características
     pdf.ln(10)
     pdf.set_font('Arial', 'B', 14)
     pdf.set_text_color(0, 78, 146)
-    pdf.cell(0, 10, 'Comparativa de Mercado', 0, 1)
-    pdf.set_font('Arial', 'B', 10)
+    pdf.cell(0, 10, 'Ventajas Exclusivas Ananda', 0, 1)
+    pdf.set_font('Arial', '', 11)
     pdf.set_text_color(0)
-    pdf.set_fill_color(220)
-    pdf.cell(60, 8, 'Desarrollo', 1, 0, 'C', 1)
-    pdf.cell(40, 8, 'Tipo', 1, 0, 'C', 1)
-    pdf.cell(40, 8, 'Precio M2', 1, 1, 'C', 1)
     
-    pdf.set_font('Arial', '', 10)
-    for index, row in df_comp.iterrows():
-        pdf.cell(60, 8, row['Proyecto'], 1, 0)
-        pdf.cell(40, 8, row['Tipo'], 1, 0, 'C')
-        pdf.cell(40, 8, f"${row['PrecioM2']:,.0f}", 1, 1, 'R')
+    features = [
+        "Precio por M2 mas bajo del mercado",
+        "Privacidad Total (Sin pared compartida)",
+        "Cochera Doble",
+        "Mantenimiento Bajo (No frente al mar)",
+        "Duenio de la Tierra + Construccion"
+    ]
+    
+    for f in features:
+        pdf.cell(0, 8, f"- {f}", 0, 1)
 
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
