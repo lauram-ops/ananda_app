@@ -6,7 +6,7 @@ from fpdf import FPDF
 import base64
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Ananda Kino | Cotizador Residencial", page_icon="🏠", layout="wide")
+st.set_page_config(page_title="Ananda Kino | Cotizador PRO", page_icon="🏠", layout="wide")
 
 # --- ESTILOS VISUALES ---
 st.markdown("""
@@ -20,25 +20,54 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- 1. CARGA DE DATOS (SILENCIOSA) ---
+# --- 1. CARGA DE DATOS INTELIGENTE ---
 @st.cache_data
 def load_data():
-    # Asegúrate que tu archivo se llame precios.csv
     file_name = "precios.csv"
+    
+    # 1. Intentar cargar el archivo (Detectando separador , o ;)
     try:
-        df = pd.read_csv(file_name)
-        df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('.', '')
-        return df
+        # Prueba con motor python para autodetectar separador
+        df = pd.read_csv(file_name, sep=None, engine='python')
     except:
-        # Si falla, usa datos dummy sin avisar
-        return pd.DataFrame({
-            'lote': range(1, 45),
-            'm2': [200 + (i*2) for i in range(44)],
-            'm2_construccion': [160] * 44,
-            'precio_lista_1': [900000 + (i*10000) for i in range(44)]
-        })
+        # Si falla, devuelve Dummy y aviso
+        return None, False
 
-df_raw = load_data()
+    # 2. Limpieza de nombres de columnas
+    df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_').str.replace('.', '').str.replace('°', '')
+    
+    # 3. BUSCADOR INTELIGENTE DE COLUMNAS (Mapeo)
+    # Buscamos cuál columna es la del 'Lote'
+    col_lote = None
+    posibles_lote = ['lote', 'lotes', 'no_lote', 'num_lote', 'unidad', 'numero', 'id']
+    for posible in posibles_lote:
+        if posible in df.columns:
+            col_lote = posible
+            break
+            
+    # Si encontramos una variante, la renombramos a 'lote' para estandarizar
+    if col_lote and col_lote != 'lote':
+        df.rename(columns={col_lote: 'lote'}, inplace=True)
+    
+    # Si de plano no encontró nada parecido a lote, avisar
+    if 'lote' not in df.columns:
+        st.error(f"⚠️ ERROR DE FORMATO: No encuentro una columna que diga 'Lote'. Las columnas que veo son: {list(df.columns)}")
+        return None, False
+
+    return df, True
+
+df_raw, archivo_cargado = load_data()
+
+# --- SI FALLA LA CARGA, USAR DATOS DE RESPALDO PARA QUE NO TRUENE ---
+if not archivo_cargado or df_raw is None:
+    df_raw = pd.DataFrame({
+        'lote': range(1, 45),
+        'm2': [200 + (i*2) for i in range(44)],
+        'm2_construccion': [160] * 44,
+        'precio_lista_1': [900000 + (i*10000) for i in range(44)]
+    })
+    # Solo mostramos el error si el usuario NO es un visitante (opcional)
+    # st.sidebar.warning("Usando datos simulados por error en CSV.")
 
 # --- 2. SIDEBAR ---
 try:
@@ -46,7 +75,7 @@ try:
 except:
     st.sidebar.header("🏠 Ananda Residencial")
 
-st.sidebar.header("1. Configuración Propiedad")
+st.sidebar.header("1. Configuración")
 
 # Selectores
 lista_seleccionada = st.sidebar.selectbox("Lista de Precio Vigente:", range(1, 11), index=0)
@@ -58,7 +87,7 @@ m2_terreno = float(row_lote.get('m2', 200))
 m2_construccion_default = float(row_lote.get('m2_construccion', 180)) 
 
 # Precio Base (Busca columna inteligente)
-cols_precio = [c for c in df_raw.columns if 'precio' in c or 'valor' in c or 'lista_1' in c]
+cols_precio = [c for c in df_raw.columns if 'precio' in c or 'valor' in c or 'lista_1' in c or 'total' in c]
 if cols_precio:
     col_base = cols_precio[0]
     precio_base_lista1 = float(row_lote[col_base])
@@ -71,7 +100,7 @@ precio_terreno_actual = precio_base_lista1 * (1 + (incremento_pct * (lista_selec
 precio_terreno_futuro = precio_base_lista1 * (1 + (incremento_pct * 9)) # Lista 10
 
 st.sidebar.markdown("---")
-st.sidebar.header("2. Construcción")
+st.sidebar.header("2. Casa Terminada")
 st.sidebar.caption("Se entrega residencia construida (Obra Civil + Acabados).")
 
 costo_m2_const = st.sidebar.number_input("Valor Construcción por m²:", value=14500, step=500)
@@ -136,7 +165,7 @@ st.caption("Proyección estimada de ingresos por rentas vacacionales.")
 r_col1, r_col2 = st.columns([1, 2])
 with r_col1:
     tarifa = st.number_input("Tarifa Noche Promedio:", value=4500, step=500)
-    ocupacion = st.slider("Ocupación Anual (%):", 20, 80, 40)
+    ocupacion = st.slider("Ocupación Anual (%)", 20, 80, 40)
     gastos_op = st.slider("% Gastos Operativos:", 20, 40, 30)
 
 with r_col2:
