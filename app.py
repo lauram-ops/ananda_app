@@ -230,7 +230,7 @@ def create_pdf():
     pdf.cell(0, 5, f'LOTE {num_lote_selec} ({m2_terreno:.0f}m2 T / {m2_construccion:.0f}m2 C)', 0, 1, 'R')
     pdf.ln(3)
 
-    # BLOQUE 2: PRECIOS (COMPACTO)
+    # BLOQUE 2: PRECIOS
     pdf.set_fill_color(0, 78, 146)
     pdf.set_text_color(255)
     pdf.set_font('Arial', 'B', 10)
@@ -302,12 +302,15 @@ def create_pdf():
     pdf.set_font('Arial', '', 8)
     pdf.ln(1)
     
-    features = ["Precio por M2 mas bajo", "Privacidad (Sin vecinos arriba/abajo)", "Cochera Doble", "Mantenimiento Bajo", "Duenio de Tierra + Casa"]
+    # AQUI ESTA LA CORRECCION: Dueño
+    features = ["Precio por M2 mas bajo", "Privacidad (Sin vecinos arriba/abajo)", "Cochera Doble", "Mantenimiento Bajo", "Dueño de Tierra + Casa"]
     for i in range(0, len(features), 2):
         t1 = f"- {features[i]}"
-        t2 = f"- {features[i+1]}" if i+1 < len(features) else ""
-        pdf.cell(90, 5, t1, 0, 0)
-        pdf.cell(90, 5, t2, 0, 1)
+        try: t2 = f"- {features[i+1]}" if i+1 < len(features) else ""
+        except: t2 = ""
+        # Codificamos explicitamente para evitar errores con la ñ
+        pdf.cell(90, 5, t1.encode('latin-1', 'replace').decode('latin-1'), 0, 0)
+        pdf.cell(90, 5, t2.encode('latin-1', 'replace').decode('latin-1'), 0, 1)
 
     # FOOTER LINK
     pdf.ln(5)
