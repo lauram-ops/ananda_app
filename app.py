@@ -2,200 +2,284 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
+from io import BytesIO
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
-    page_title="Ananda Kino | Calculadora Maestra",
+    page_title="Ananda Kino | Proyección Feb 2027",
     page_icon="🌊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# --- ESTILOS CSS (Diseño Premium) ---
+# --- ESTILOS CSS PREMIUM ---
 st.markdown("""
     <style>
-    /* Fondo Degradado */
-    [data-testid="stAppViewContainer"] {
-        background: linear-gradient(180deg, #E0F2F7 0%, #F0F8FF 100%);
-    }
-    /* Textos Azules */
-    h1, h2, h3, h4, p, div, span, label, .stMarkdown {
-        color: #004e92 !important;
-        font-family: 'Helvetica Neue', sans-serif;
-    }
-    /* Tarjetas */
+    /* Fondo Degradado Suave */
+    [data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #F0F8FF 0%, #FFFFFF 100%); }
+    
+    /* Tipografía Corporativa */
+    h1, h2, h3, .metric-label { color: #004e92 !important; font-family: 'Helvetica Neue', sans-serif; }
+    
+    /* Tarjetas de Métricas */
     .metric-card {
-        background-color: white;
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        text-align: center;
-        border: 1px solid #e1e5e8;
+        background: white; padding: 20px; border-radius: 15px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.08); text-align: center; border: 1px solid #e1e5e8;
+        height: 100%;
     }
-    .big-number { font-size: 32px; font-weight: 800; color: #004e92; }
-    .success-number { font-size: 32px; font-weight: 800; color: #28a745; }
-    .danger-number { font-size: 32px; font-weight: 800; color: #d62728; }
+    .big-number { font-size: 28px; font-weight: 800; color: #004e92; }
+    .future-number { font-size: 28px; font-weight: 800; color: #ffc107; }
+    
+    /* Ficha Técnica */
+    .feature-box {
+        background-color: #f8f9fa; padding: 15px; border-radius: 10px;
+        border-left: 5px solid #004e92; margin-bottom: 10px;
+    }
+    .amenity-tag {
+        display: inline-block; background-color: #e3f2fd; color: #004e92;
+        padding: 5px 10px; border-radius: 15px; font-size: 12px; margin: 2px; font-weight: bold;
+    }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 1. BASE DE DATOS (Simulación de 44 Lotes) ---
-# En el futuro, esto se puede reemplazar con: df = pd.read_csv("inventario.csv")
+# --- 1. CARGA DE DATOS ---
 @st.cache_data
-def generar_inventario():
-    # Creamos 44 lotes simulados
-    lotes = []
-    for i in range(1, 45):
-        # Simulamos variación de m2 entre 200 y 350
-        m2 = np.random.randint(200, 350)
-        # Precio base por m2 (ej. $4,500 MXN)
-        precio_lista = m2 * 4500 
-        lotes.append({
-            "Lote": f"Lote {i}",
-            "M2": m2,
-            "Precio_Lista": precio_lista,
-            "Estado": "Disponible"
+def load_data():
+    # CAMBIA ESTO POR EL NOMBRE EXACTO DE TU ARCHIVO SI ES DIFERENTE
+    file_name = "Lista de Precios, Planes Pago y descuentos autorizados 15 Octubre 2025.xlsx - Lista de Precios.csv"
+    try:
+        df = pd.read_csv(file_name)
+        df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
+        return df
+    except:
+        # Datos Dummy de respaldo
+        return pd.DataFrame({
+            'lote': range(1, 45),
+            'm2': np.random.randint(200, 350, 44),
+            'precio_lista_1': np.random.randint(900000, 1200000, 44)
         })
-    return pd.DataFrame(lotes)
 
-df_inventario = generar_inventario()
+df_raw = load_data()
 
-# Base de datos Competencia
-COMPETIDORES = {
-    "Punta Península (Condo)": 4550000,
-    "CAAY (Depto)": 3500000,
-    "Marenza (Torre)": 3200000,
-    "Vistas (Solo Lote)": 1100000
-}
+# --- 2. LOGICA DE NEGOCIO Y PRECIOS ---
+def get_incremento_lista(lista_actual):
+    # Asumimos 3% de incremento por cada lista que avanza
+    return 1 + (0.03 * (lista_actual - 1))
 
-# --- 2. SIDEBAR: COTIZADOR PROFESIONAL ---
+# Sidebar Inputs
 try:
     st.sidebar.image("logo.png", use_column_width=True)
 except:
     st.sidebar.header("🌊 Ananda Kino")
 
-st.sidebar.header("1. Selecciona Propiedad")
+st.sidebar.markdown("### ⚙️ Configuración Cotización")
 
-# Selector de Lote (1 al 44)
-lote_selec = st.sidebar.selectbox("Número de Lote:", df_inventario['Lote'])
-datos_lote = df_inventario[df_inventario['Lote'] == lote_selec].iloc[0]
+# Venta Global (Determina Lista Actual)
+total_vendidos = st.sidebar.number_input("Casas Vendidas (Avance Global)", 0, 44, 5)
+lista_actual = min(10, (total_vendidos // 3) + 1)
 
-# Mostrar info del lote seleccionado
-col_info1, col_info2 = st.sidebar.columns(2)
-col_info1.metric("Superficie", f"{datos_lote['M2']} m²")
-col_info2.metric("Precio Lista", f"${datos_lote['Precio_Lista']/1000:,.0f}k")
+# Lote y Construcción
+lote_label = st.sidebar.selectbox("Seleccionar Lote", df_raw['lote'])
+row_lote = df_raw[df_raw['lote'] == lote_label].iloc[0]
+col_precio_base = [c for c in df_raw.columns if 'precio' in c][0]
+precio_base_lista1 = row_lote[col_precio_base]
 
-st.sidebar.header("2. Estrategia de Precio")
+# Costos Casa
+m2_construccion = st.sidebar.number_input("M² Construcción Casa", value=180, help="Promedio modelo 3 recámaras")
+costo_construccion = st.sidebar.number_input("Costo Construcción (Obra)", value=2500000, step=50000)
 
-# Listas de Precios (Factor de ajuste)
-lista_precio = st.sidebar.selectbox(
-    "Lista de Precios a Aplicar:",
-    ["Lista Pública (100%)", "Preventa (-5%)", "Friends & Family (-10%)", "Lista Cero (-15%)"]
-)
+# CÁLCULOS CLAVE
+# 1. Precio HOY (Según Lista Actual)
+precio_terreno_hoy = precio_base_lista1 * get_incremento_lista(lista_actual)
+total_inversion_hoy = precio_terreno_hoy + costo_construccion
 
-# Lógica de listas
-factor_lista = 1.0
-if "Preventa" in lista_precio: factor_lista = 0.95
-if "Family" in lista_precio: factor_lista = 0.90
-if "Cero" in lista_precio: factor_lista = 0.85
+# 2. Precio FUTURO (Feb 2027 - Lista 10)
+# Lista 10 = Precio Base * Incremento de llegar a la lista 10
+precio_terreno_futuro = precio_base_lista1 * get_incremento_lista(10)
+total_valor_futuro = precio_terreno_futuro + costo_construccion 
 
-# Descuento Adicional Manual
-descuento_manual = st.sidebar.number_input("Descuento Adicional Negociación (%)", 0, 20, 0)
-factor_final = factor_lista * (1 - (descuento_manual/100))
+# 3. Plusvalía
+plusvalia_preventa = total_valor_futuro - total_inversion_hoy
 
-# Cálculo Precio Final Terreno
-precio_final_lote = datos_lote['Precio_Lista'] * factor_final
-ahorro_lista = datos_lote['Precio_Lista'] - precio_final_lote
+# Competencia
+precio_competencia = 4500000 # Punta Península / Torres
+m2_competencia = 110 # Promedio de un depto
 
-if ahorro_lista > 0:
-    st.sidebar.success(f"¡Descuento aplicado: -${ahorro_lista:,.0f}!")
+# --- INTERFAZ PRINCIPAL ---
 
-st.sidebar.markdown("---")
-st.sidebar.header("3. Construcción y Comparativa")
+st.title("Ananda Kino: Análisis de Inversión y Plusvalía")
+st.markdown(f"**Escenario:** Compra en Preventa (Lista {lista_actual}) vs. Entrega Final (Feb 2027)")
 
-costo_construccion = st.sidebar.number_input("Costo Construcción (Casa)", value=2500000, step=50000)
-rival = st.sidebar.selectbox("Comparar contra:", list(COMPETIDORES.keys()))
-precio_rival = COMPETIDORES[rival]
+# --- SECCIÓN 1: LA COMPARATIVA FINANCIERA (EL GANCHO) ---
+st.header("1. Tu Ganancia Patrimonial (Preventa vs Entrega)")
 
-# Costo Total Ananda
-inversion_total = precio_final_lote + costo_construccion
-plusvalia_instantanea = precio_rival - inversion_total
-
-# --- 3. PANEL PRINCIPAL ---
-
-# Título
-st.title(f"Cotización: {lote_selec} ({datos_lote['M2']} m²)")
-st.markdown(f"**Estrategia:** {lista_precio} | **Cliente:** Propuesta Personalizada")
-
-# Tarjetas Superiores
 c1, c2, c3 = st.columns(3)
 with c1:
     st.markdown(f"""<div class="metric-card">
-    <div>Inversión Total Ananda</div>
-    <div class="big-number">${inversion_total:,.0f}</div>
-    <div style="font-size:12px">Terreno + Construcción</div>
+        <div class="metric-label">Precio Preventa (HOY)</div>
+        <div class="big-number">${total_inversion_hoy:,.0f}</div>
+        <div style="font-size:12px; color:grey">Terreno + Casa Equipada</div>
     </div>""", unsafe_allow_html=True)
 
 with c2:
-    st.markdown(f"""<div class="metric-card">
-    <div>Precio Competencia ({rival})</div>
-    <div class="danger-number">${precio_rival:,.0f}</div>
-    <div style="font-size:12px">Departamento / Similar</div>
+    st.markdown(f"""<div class="metric-card" style="border: 2px solid #ffc107;">
+        <div class="metric-label">Valor Feb 2027 (Lista 10)</div>
+        <div class="future-number">${total_valor_futuro:,.0f}</div>
+        <div style="font-size:12px; color:grey">Precio Mercado Terminado</div>
     </div>""", unsafe_allow_html=True)
 
 with c3:
-    st.markdown(f"""<div class="metric-card" style="border: 2px solid #28a745; background: #f0fff4;">
-    <div>💡 AHORRO REAL (Equity)</div>
-    <div class="success-number">+${plusvalia_instantanea:,.0f}</div>
-    <div style="font-size:12px; font-weight:bold; color:#28a745">Ganas al comprar</div>
+    st.markdown(f"""<div class="metric-card" style="background:#e8f5e9; border: 2px solid #28a745;">
+        <div class="metric-label" style="color:#28a745!important">Plusvalía Directa</div>
+        <div class="big-number" style="color:#28a745">+{plusvalia_preventa:,.0f}</div>
+        <div style="font-size:12px; color:#28a745; font-weight:bold">Ganancia por comprar antes</div>
     </div>""", unsafe_allow_html=True)
 
+# Gráfica Comparativa 3 Barras
+fig_comp = go.Figure()
+fig_comp.add_trace(go.Bar(
+    x=['Competencia (Depto)', 'Ananda (HOY)', 'Ananda (Feb 2027)'],
+    y=[precio_competencia, total_inversion_hoy, total_valor_futuro],
+    marker_color=['#9e9e9e', '#004e92', '#ffc107'],
+    text=[f"${precio_competencia/1000000:.1f}M", f"${total_inversion_hoy/1000000:.1f}M", f"${total_valor_futuro/1000000:.1f}M"],
+    textposition='auto'
+))
+fig_comp.update_layout(title="Comparativa de Mercado y Evolución de Precio", height=400)
+st.plotly_chart(fig_comp, use_container_width=True)
+
+# --- SECCIÓN 2: EL PRODUCTO (CALIDAD Y M2) ---
 st.markdown("---")
+st.header("2. Ficha Técnica y Costo Inteligente")
 
-# --- SECCIÓN DE RENTAS (MEJORADA) ---
-st.header("🏖️ Potencial de Negocio (Rentas Vacacionales)")
+col_prod1, col_prod2 = st.columns([1, 1])
 
-col_rentas_input, col_rentas_graph = st.columns([1, 2])
-
-with col_rentas_input:
-    st.markdown("### Configura el Escenario")
-    st.info("Ajusta estos valores para mostrarle al cliente cuánto puede ganar.")
+with col_prod1:
+    st.subheader("🏡 Residencia Ananda (Casa)")
+    st.markdown("""
+    <div class="feature-box">
+        <b>🛌 3 Recámaras | 🚿 2.5 Baños | 🚗 Cochera Doble | 🏗️ 2 Plantas</b>
+    </div>
+    """, unsafe_allow_html=True)
     
-    tarifa_noche = st.number_input("Tarifa por Noche (MXN)", value=4500, step=500)
-    
-    # Input directo de noches
-    noches_rentadas = st.slider("Noches Rentadas al Año:", 0, 365, 120, help="Promedio conservador: 100-120 noches")
-    ocupacion_pct = (noches_rentadas / 365) * 100
-    st.caption(f"Ocupación Anual: {ocupacion_pct:.1f}%")
-    
-    admin_fee_pct = st.slider("Comisión Administración (%)", 15, 30, 20) / 100
+    st.markdown("**💎 Se entrega con:**")
+    st.markdown("""
+    - ✅ Piso instalado en toda la casa
+    - ✅ Cocina integral con barra y carpintería
+    - ✅ Estufa eléctrica y campana
+    - ✅ Closets completos y carpintería
+    - ✅ Canceles y accesorios de baño
+    - ✅ Preparación para Minisplits
+    """)
 
-with col_rentas_graph:
-    # Cálculos
-    ingreso_bruto_anual = tarifa_noche * noches_rentadas
-    pago_admin = ingreso_bruto_anual * admin_fee_pct
-    ingreso_neto_anual = ingreso_bruto_anual - pago_admin
-    roi_rentas = (ingreso_neto_anual / inversion_total) * 100
+with col_prod2:
+    st.subheader("🌳 Amenidades Exclusivas (3,200 m²)")
+    amenidades = ["Alberca", "Andador", "Pet Park", "Terraza Club", "Asadores", "Juegos Infantiles", "Firepits", "Seguridad 24/7", "Única Cerrada (Privada)"]
+    html_amenidades = "".join([f'<span class="amenity-tag">{a}</span>' for a in amenidades])
+    st.markdown(html_amenidades, unsafe_allow_html=True)
     
-    # Gráfico de pastel para ver a dónde va el dinero
-    labels = ['Ingreso Neto (Para Ti)', 'Gasto Admin / Mant.']
-    values = [ingreso_neto_anual, pago_admin]
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.subheader("🆚 Análisis Precio por M²")
     
-    fig_pie = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.6, 
-                                     marker_colors=['#28a745', '#d62728'])])
-    fig_pie.update_layout(
-        title_text=f"Flujo Anual Estimado: ${ingreso_bruto_anual:,.0f}",
-        annotations=[dict(text=f'ROI<br>{roi_rentas:.1f}%', x=0.5, y=0.5, font_size=20, showarrow=False)],
-        height=300,
-        margin=dict(t=30, b=0, l=0, r=0)
-    )
-    st.plotly_chart(fig_pie, use_container_width=True)
+    # Cálculo m2
+    precio_m2_ananda = total_inversion_hoy / m2_construccion
+    precio_m2_competencia = precio_competencia / m2_competencia # Asumiendo 110m2 promedio depto
+    
+    st.markdown(f"""
+    <table style="width:100%; text-align:center; border-collapse: collapse;">
+        <tr style="background-color:#f1f1f1; font-weight:bold;">
+            <td style="padding:10px;">Concepto</td>
+            <td>Ananda (Casa)</td>
+            <td>Competencia (Depto)</td>
+        </tr>
+        <tr>
+            <td style="padding:10px; font-weight:bold;">Espacio (m²)</td>
+            <td>{m2_construccion} m²</td>
+            <td>~{m2_competencia} m²</td>
+        </tr>
+        <tr style="border-top: 1px solid #ddd;">
+            <td style="padding:10px; font-weight:bold; color:#004e92;">Precio por M²</td>
+            <td style="font-size:18px; font-weight:bold; color:#28a745;">${precio_m2_ananda:,.0f}</td>
+            <td style="font-size:18px; font-weight:bold; color:#d62728;">${precio_m2_competencia:,.0f}</td>
+        </tr>
+    </table>
+    <small>Estás comprando un <b>{((precio_m2_competencia - precio_m2_ananda)/precio_m2_competencia)*100:.0f}% más barato</b> por metro cuadrado.</small>
+    """, unsafe_allow_html=True)
 
-# Resumen de Texto Rentas
-st.success(f"""
-    **Resumen de Rentabilidad:**
-    Con solo **{noches_rentadas} noches** rentadas al año, tu propiedad generaría **${ingreso_neto_anual:,.0f} MXN** libres.
-    Esto paga el mantenimiento y genera utilidad sobre tu inversión.
-""")
-
+# --- SECCIÓN 3: RENTAS Y NEGOCIO (SIMULADOR NETO) ---
 st.markdown("---")
-st.caption("Herramienta exclusiva para uso interno de Ananda Kino. Los precios de construcción y renta son estimaciones de mercado.")
+st.header("3. Potencial de Negocio (Rentas Vacacionales)")
+
+col_renta_params, col_renta_res = st.columns([1, 2])
+
+with col_renta_params:
+    st.markdown("#### Simulador")
+    tarifa = st.slider("Tarifa Noche Promedio", 3000, 8000, 4500, step=250)
+    ocupacion = st.slider("Ocupación Anual (%)", 20, 80, 40)
+    admin_fee = st.slider("Comisión Admin (%)", 15, 30, 20)
+    mantenimiento = st.number_input("Costo Mantenimiento Mensual (HOA)", value=2500)
+
+with col_renta_res:
+    # Cálculos Anuales
+    noches_rentadas = 365 * (ocupacion/100)
+    ingreso_bruto = tarifa * noches_rentadas
+    costo_admin = ingreso_bruto * (admin_fee/100)
+    costo_mto_anual = mantenimiento * 12
+    
+    ingreso_neto = ingreso_bruto - costo_admin - costo_mto_anual
+    roi = (ingreso_neto / total_inversion_hoy) * 100
+    
+    st.success(f"💰 Ingreso Neto Anual Estimado: **${ingreso_neto:,.0f} MXN**")
+    
+    # Gráfica Cascada (Waterfall) para mostrar descuentos
+    fig_water = go.Figure(go.Waterfall(
+        orientation = "v",
+        measure = ["relative", "relative", "relative", "total"],
+        x = ["Ingreso Bruto", "Comisión Admin", "Mantenimiento", "NETO BOLSILLO"],
+        y = [ingreso_bruto, -costo_admin, -costo_mto_anual, ingreso_neto],
+        connector = {"line":{"color":"rgb(63, 63, 63)"}},
+        decreasing = {"marker":{"color":"#ef553b"}},
+        increasing = {"marker":{"color":"#004e92"}},
+        totals = {"marker":{"color":"#28a745"}}
+    ))
+    fig_water.update_layout(title="Flujo de Efectivo Real (Descontando Gastos)", height=350)
+    st.plotly_chart(fig_water, use_container_width=True)
+
+# --- BOTÓN DE DESCARGA (RESUMEN) ---
+st.markdown("---")
+def generar_resumen():
+    texto = f"""
+    COTIZACIÓN OFICIAL - ANANDA KINO
+    --------------------------------
+    Lote Seleccionado: {lote_label}
+    Superficie Terreno: {row_lote['m2']} m2
+    Superficie Construcción: {m2_construccion} m2
+    
+    PRECIO Y PLUSVALÍA
+    --------------------------------
+    Precio Lista Actual (Preventa): ${total_inversion_hoy:,.2f}
+    Precio Proyectado Feb 2027 (Lista 10): ${total_valor_futuro:,.2f}
+    PLUSVALÍA ESTIMADA: ${plusvalia_preventa:,.2f}
+    
+    FICHA TÉCNICA
+    --------------------------------
+    Casa 3 Recámaras, 2.5 Baños, Cochera Doble.
+    Incluye: Cocina, Closets, Minisplits, Piso, Carpintería.
+    Amenidades: Alberca, Pet Park, Seguridad.
+    
+    PROYECCIÓN RENTAS (ANUAL)
+    --------------------------------
+    Escenario Ocupación: {ocupacion}%
+    Tarifa Noche: ${tarifa:,.2f}
+    Ingreso Neto (Libre de gastos): ${ingreso_neto:,.2f}
+    
+    *Cotización informativa sujeta a disponibilidad y cambios de precio.*
+    """
+    return texto
+
+resumen_txt = generar_resumen()
+st.download_button(
+    label="📥 Descargar Resumen de Cotización (TXT)",
+    data=resumen_txt,
+    file_name=f"Cotizacion_Ananda_{lote_label}.txt",
+    mime="text/plain"
+)
