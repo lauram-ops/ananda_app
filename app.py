@@ -69,7 +69,6 @@ def load_data():
             df = df[(df['lote'] >= 1) & (df['lote'] <= 44)]
             df = df.sort_values('lote')
             
-            # Status Original
             col_status = next((c for c in df.columns if 'cliente' in c or 'estatus' in c), None)
             if col_status:
                 df['status'] = df[col_status].apply(lambda x: 'Vendido' if pd.notnull(x) and str(x).strip() not in ['', 'nan'] else 'Disponible')
@@ -90,10 +89,13 @@ if df_raw is None: df_raw = pd.DataFrame({'lote': range(1, 45), 'status': ['Disp
 try: st.sidebar.image("logo.png", use_column_width=True)
 except: st.sidebar.header("🏠 Ananda Residencial")
 
-# DATOS DEL CLIENTE (NUEVO)
-st.sidebar.header("👤 Personalización")
-cliente_nombre = st.sidebar.text_input("Nombre del Cliente:", value="")
-asesor_nombre = st.sidebar.text_input("Asesor de Ventas:", value="")
+# FECHA Y PERSONALIZACIÓN
+fecha_hoy = date.today().strftime("%d/%m/%Y")
+st.sidebar.markdown(f"**📅 Fecha:** {fecha_hoy}")
+
+st.sidebar.header("👤 Datos de Cotización")
+cliente_nombre = st.sidebar.text_input("Cliente:", value="")
+asesor_nombre = st.sidebar.text_input("Asesor:", value="")
 
 st.sidebar.markdown("---")
 st.sidebar.header("⚙️ Configuración")
@@ -334,7 +336,7 @@ def create_pdf():
     pdf.cell(100, 8, 'Valor Mercado (Feb 2027)', 1, 0)
     pdf.cell(60, 8, f'${precio_final_mercado:,.2f}', 1, 1, 'R')
     
-    # 3. Rentas Detallado (NUEVO DESGLOSE)
+    # 3. Rentas Detallado
     pdf.ln(10)
     pdf.set_font('Arial', 'B', 14)
     pdf.set_text_color(0, 78, 146)
