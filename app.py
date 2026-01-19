@@ -69,6 +69,7 @@ def load_data():
             df = df[(df['lote'] >= 1) & (df['lote'] <= 44)]
             df = df.sort_values('lote')
             
+            # Status Original
             col_status = next((c for c in df.columns if 'cliente' in c or 'estatus' in c), None)
             if col_status:
                 df['status'] = df[col_status].apply(lambda x: 'Vendido' if pd.notnull(x) and str(x).strip() not in ['', 'nan'] else 'Disponible')
@@ -305,14 +306,18 @@ def create_pdf():
     pdf = PDF()
     pdf.add_page()
     
-    # 0. HEADER CLIENTE
+    # 0. HEADER CLIENTE Y FECHA
     pdf.set_font('Arial', '', 10)
-    pdf.set_text_color(100)
-    if cliente_nombre: pdf.cell(0, 5, f'Preparado para: {cliente_nombre}', 0, 1, 'R')
-    if asesor_nombre: pdf.cell(0, 5, f'Asesor: {asesor_nombre}', 0, 1, 'R')
+    pdf.set_text_color(80)
+    # Fecha alineada a la derecha
+    pdf.cell(0, 5, f'Fecha: {fecha_hoy}', 0, 1, 'R')
+    
+    # Datos Cliente izquierda
+    if cliente_nombre: pdf.cell(0, 5, f'Cliente: {cliente_nombre}', 0, 1, 'L')
+    if asesor_nombre: pdf.cell(0, 5, f'Asesor: {asesor_nombre}', 0, 1, 'L')
     pdf.ln(5)
 
-    # 1. Detalles
+    # 1. Detalles Propiedad
     pdf.set_font('Arial', 'B', 16)
     pdf.set_text_color(0, 78, 146)
     pdf.cell(0, 10, f'Propiedad: Casa en Lote {num_lote_selec}', 0, 1)
@@ -324,7 +329,7 @@ def create_pdf():
     pdf.set_font('Arial', 'I', 10)
     pdf.multi_cell(0, 6, "Incluye: 3 Recamaras, 2.5 Banios, Cochera Doble, Cocina con barra, Closets y Pisos.")
     
-    # 2. Precios
+    # 2. Tabla Precios
     pdf.ln(5)
     pdf.set_fill_color(240, 245, 255)
     pdf.set_font('Arial', 'B', 11)
@@ -336,7 +341,7 @@ def create_pdf():
     pdf.cell(100, 8, 'Valor Mercado (Feb 2027)', 1, 0)
     pdf.cell(60, 8, f'${precio_final_mercado:,.2f}', 1, 1, 'R')
     
-    # 3. Rentas Detallado
+    # 3. Rentas Detallado (Tabla Financiera)
     pdf.ln(10)
     pdf.set_font('Arial', 'B', 14)
     pdf.set_text_color(0, 78, 146)
@@ -379,7 +384,7 @@ def create_pdf():
         pdf.cell(60, 8, f"${row['Valor Propiedad']:,.0f}", 1, 0, 'R')
         pdf.cell(60, 8, f"${row['Renta Acumulada']:,.0f}", 1, 1, 'R')
 
-    # 5. Características
+    # 5. Ventajas
     pdf.ln(5)
     pdf.set_font('Arial', 'B', 14)
     pdf.set_text_color(0, 78, 146)
@@ -395,6 +400,15 @@ def create_pdf():
     ]
     for f in features:
         pdf.cell(0, 6, f"- {f}", 0, 1)
+    
+    # 6. Contacto / Footer Info
+    pdf.ln(15)
+    pdf.set_font('Arial', 'B', 12)
+    pdf.set_text_color(0, 78, 146)
+    pdf.cell(0, 10, 'Mas Informacion y Avances:', 0, 1, 'C')
+    pdf.set_font('Arial', 'U', 11) # Underline for link
+    pdf.set_text_color(0, 0, 255)
+    pdf.cell(0, 5, 'https://anandakino.mx/', 0, 1, 'C', link='https://anandakino.mx/')
 
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
