@@ -5,6 +5,7 @@ import plotly.express as px
 import numpy as np
 from fpdf import FPDF
 from datetime import date
+import base64
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="Ananda Kino | Master Cotizador", page_icon="🌊", layout="wide")
@@ -20,13 +21,13 @@ st.markdown("""
     .big-number { font-size: 28px; font-weight: 800; color: #004e92; }
     .future-number { font-size: 28px; font-weight: 800; color: #ffc107; }
     
-    /* Contenedores */
-    .section-box { background-color: white; padding: 20px; border-radius: 12px; border: 1px solid #eee; margin-bottom: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
-    
-    /* Tabla */
-    .comp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    /* Tabla Comparativa */
+    .comp-table { width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px; }
     .comp-table th { background-color: #004e92; color: white; padding: 12px; text-align: center; }
     .comp-table td { border-bottom: 1px solid #ddd; padding: 10px; text-align: center; color: #333; }
+    .feature-table td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
+    .check { color: green; font-weight: bold; }
+    .cross { color: red; font-weight: bold; }
     
     .stButton>button { background-color: #004e92; color: white; font-weight: bold; height: 50px; width: 100%; border-radius: 8px;}
     </style>
@@ -113,7 +114,7 @@ plusvalia_preventa = precio_final_mercado - precio_lista_actual
 st.sidebar.markdown("---")
 st.sidebar.info(f"📋 **Ficha Lote {num_lote_selec}:**\n- Terreno: {m2_terreno:.0f} m²\n- Construcción: {m2_construccion:.0f} m²")
 
-# --- 3. DASHBOARD PRINCIPAL ---
+# --- 3. PANEL PRINCIPAL (ENCABEZADO) ---
 st.title(f"Residencia Ananda | Lote {num_lote_selec}")
 if "Vendido" in lote_str_selec: st.warning("⛔ LOTE VENDIDO")
 
@@ -124,16 +125,51 @@ st.markdown(f"""<div style="background:#004e92; color:white; padding:15px; borde
     <div style="font-size:32px; font-weight:900;">{dias_restantes} Días</div>
 </div>""", unsafe_allow_html=True)
 
+# TARJETAS
 c1, c2, c3 = st.columns(3)
 with c1: st.markdown(f"""<div class="metric-card"><div>Inversión Inicial</div><div class="big-number">${precio_lista_actual:,.0f}</div><small>Preventa</small></div>""", unsafe_allow_html=True)
 with c2: st.markdown(f"""<div class="metric-card" style="border:2px solid #ffc107; background:#fffdf5"><div>Valor Entrega</div><div class="future-number">${precio_final_mercado:,.0f}</div><small>Feb 2027</small></div>""", unsafe_allow_html=True)
 with c3: st.markdown(f"""<div class="metric-card" style="background:#f0fff4; border:2px solid #28a745;"><div>Plusvalía Ganada</div><div class="big-number" style="color:#28a745">+${plusvalia_preventa:,.0f}</div><small>Al cierre de preventa</small></div>""", unsafe_allow_html=True)
 
-# --- 4. COMPARATIVA ---
+# --- 4. PROYECCIÓN PATRIMONIAL (MOVIDO AQUÍ) ---
 st.markdown("---")
-st.header("🏆 Ananda vs El Mercado")
+st.header("📈 Tu Patrimonio en 5 Años (2028-2032)")
+st.caption("Crecimiento de valor del inmueble + Ingresos acumulados por rentas.")
 
-# Datos
+# Variables de proyección
+tarifa_base = 4500
+ocupacion_base = 0.45
+inflacion = 0.05
+plusvalia_anual = 0.08
+years = range(2028, 2033)
+
+data_proy = []
+val_prop = precio_final_mercado
+acum_rentas = 0
+
+for i, y in enumerate(years):
+    val_prop = val_prop * (1 + plusvalia_anual)
+    # Renta simple estimada para la gráfica (el detalle fino está abajo en el simulador)
+    t_act = tarifa_base * ((1+inflacion)**i)
+    neto_anual_est = (t_act * 365 * ocupacion_base) * 0.70 # Estimado 30% gastos
+    acum_rentas += neto_anual_est
+    
+    data_proy.append({"Año": y, "Valor Propiedad": val_prop, "Renta Acumulada": acum_rentas})
+
+df_proy = pd.DataFrame(data_proy)
+
+# Gráfica de Área
+fig_area = px.area(df_proy, x="Año", y=["Valor Propiedad", "Renta Acumulada"], 
+                  color_discrete_map={"Valor Propiedad":"#004e92", "Renta Acumulada":"#28a745"})
+fig_area.update_layout(height=350, plot_bgcolor='rgba(0,0,0,0)')
+st.plotly_chart(fig_area, use_container_width=True)
+
+# --- 5. ANANDA VS EL MERCADO (MEJORADO) ---
+st.markdown("---")
+st.header("🏆 Ananda vs Competencia")
+st.caption("Comparativa directa contra desarrollos verticales (Condos).")
+
+# Datos Mercado
 precio_m2_ananda = precio_lista_actual / m2_construccion if m2_construccion > 0 else 0
 data_comp = [
     {"Proyecto": "ANANDA", "Precio": precio_lista_actual, "M2": m2_construccion, "Tipo": "Casa", "PrecioM2": precio_m2_ananda},
@@ -143,10 +179,23 @@ data_comp = [
 ]
 df_comp = pd.DataFrame(data_comp)
 
-col_comp_graf, col_comp_info = st.columns([1, 1])
+col_feat, col_price = st.columns([1, 1])
 
-with col_comp_graf:
-    st.subheader("Costo Real por M²")
+with col_feat:
+    st.subheader("Diferenciadores de Estilo de Vida")
+    st.markdown("""
+    <table class="comp-table feature-table">
+        <tr><th>Característica</th><th>🏡 ANANDA</th><th>🏢 CONDOS (Otros)</th></tr>
+        <tr><td><b>Privacidad</b></td><td><span class='check'>Total (Sin vecinos pared con pared)</span></td><td><span class='cross'>Baja (Muros compartidos)</span></td></tr>
+        <tr><td><b>Ruidos</b></td><td><span class='check'>Silencioso (Sin pisadas arriba)</span></td><td><span class='cross'>Ruidos de vecinos arriba/abajo</span></td></tr>
+        <tr><td><b>Cochera</b></td><td><span class='check'>Privada y Techada (Doble)</span></td><td><span class='cross'>Estacionamiento Común/Lejos</span></td></tr>
+        <tr><td><b>Cuotas Mto.</b></td><td><span class='check'>Bajas (Solo áreas comunes)</span></td><td><span class='cross'>Altas (Elevadores, Edificios)</span></td></tr>
+        <tr><td><b>Propiedad</b></td><td><span class='check'>Dueño de la Tierra + Casa</span></td><td><span class='cross'>Solo indiviso (Aire)</span></td></tr>
+    </table>
+    """, unsafe_allow_html=True)
+
+with col_price:
+    st.subheader("Precio Real por M²")
     fig_bar = go.Figure(go.Bar(
         x=df_comp.sort_values('PrecioM2')['Proyecto'], 
         y=df_comp.sort_values('PrecioM2')['PrecioM2'],
@@ -154,22 +203,12 @@ with col_comp_graf:
         text=[f"${x:,.0f}" for x in df_comp.sort_values('PrecioM2')['PrecioM2']],
         textposition='auto'
     ))
-    fig_bar.update_layout(height=350, plot_bgcolor='rgba(0,0,0,0)', yaxis_title="Pesos por Metro Cuadrado")
+    fig_bar.update_layout(height=300, plot_bgcolor='rgba(0,0,0,0)', yaxis_title="$/m2")
     st.plotly_chart(fig_bar, use_container_width=True)
 
-with col_comp_info:
-    st.subheader("Tabla Comparativa")
-    st.markdown(f"""
-    <table class="comp-table">
-        <tr><th>Proyecto</th><th>Tipo</th><th>Precio Aprox</th><th>Precio M²</th></tr>
-        {''.join([f"<tr {'style=background-color:#e3f2fd;font-weight:bold' if 'ANANDA' in r['Proyecto'] else ''}><td>{r['Proyecto']}</td><td>{r['Tipo']}</td><td>${r['Precio']:,.0f}</td><td>${r['PrecioM2']:,.0f}</td></tr>" for i,r in df_comp.sort_values('PrecioM2').iterrows()])}
-    </table>
-    """, unsafe_allow_html=True)
-    st.info("💡 **Dato:** En Ananda pagas casi la mitad por metro cuadrado que en los desarrollos verticales, y eres dueño de la tierra.")
-
-# --- 5. RENTAS (REGRESO AL PANEL PRINCIPAL) ---
+# --- 6. SIMULADOR DE RENTAS ---
 st.markdown("---")
-st.header("📈 Simulador de Negocio (Rentas)")
+st.header("📊 Simulador de Negocio Detallado")
 st.markdown('<div class="section-box">', unsafe_allow_html=True)
 
 col_inputs, col_results = st.columns([1, 2])
@@ -184,7 +223,6 @@ with col_inputs:
     mto_mensual = st.number_input("Mantenimiento Mensual ($):", value=2000)
 
 with col_results:
-    # Cálculos
     ingreso_bruto = tarifa * 365 * (ocupacion_pct/100)
     gasto_admin = ingreso_bruto * comision_pct
     gasto_mto = mto_mensual * 12
@@ -192,54 +230,16 @@ with col_results:
     neto_anual = ingreso_bruto - total_gastos
     roi = (neto_anual / precio_lista_actual) * 100
     
-    # Métricas
     m1, m2, m3 = st.columns(3)
     m1.metric("Ingreso Bruto", f"${ingreso_bruto:,.0f}")
-    m2.metric("Total Gastos", f"-${total_gastos:,.0f}")
+    m2.metric("Gastos", f"-${total_gastos:,.0f}")
     m3.metric("Neto Bolsillo", f"${neto_anual:,.0f}", delta=f"ROI {roi:.1f}%")
     
-    # Gráfica Dona
-    fig_pie = go.Figure(data=[go.Pie(
-        labels=['Tu Ganancia', 'Comisión Admin', 'Mantenimiento'],
-        values=[neto_anual, gasto_admin, gasto_mto],
-        hole=.4, marker_colors=['#28a745', '#ef553b', '#ffa600']
-    )])
-    fig_pie.update_layout(height=250, margin=dict(t=0, b=0, l=0, r=0))
+    fig_pie = go.Figure(data=[go.Pie(labels=['Ganancia', 'Comisión', 'Mantenimiento'], values=[neto_anual, gasto_admin, gasto_mto], hole=.4)])
+    fig_pie.update_layout(height=250, margin=dict(t=0,b=0))
     st.plotly_chart(fig_pie, use_container_width=True)
 
-st.markdown('</div>', unsafe_allow_html=True)
-
-# --- 6. PROYECCIÓN 5 AÑOS ---
-st.subheader("💰 Tu Patrimonio en 5 Años (2028-2032)")
-st.caption("Considerando Plusvalía (8% anual) + Ingresos por Renta (Inflación 5%).")
-
-years = range(2028, 2033)
-inflacion = 0.05
-plusvalia_anual = 0.08
-
-data_proy = []
-val_prop = precio_final_mercado
-acum_rentas = 0
-
-for i, y in enumerate(years):
-    val_prop = val_prop * (1 + plusvalia_anual)
-    
-    t_act = tarifa * ((1+inflacion)**i)
-    bruto = t_act * 365 * (ocupacion_pct/100)
-    gastos = (bruto * comision_pct) + (mto_mensual * 12 * ((1+inflacion)**i))
-    neto = bruto - gastos
-    acum_rentas += neto
-    
-    data_proy.append({"Año": y, "Valor Propiedad": val_prop, "Renta Acumulada": acum_rentas})
-
-df_proy = pd.DataFrame(data_proy)
-df_proy['Patrimonio Total'] = df_proy['Valor Propiedad'] + df_proy['Renta Acumulada']
-
-fig_area = px.area(df_proy, x="Año", y=["Valor Propiedad", "Renta Acumulada"], 
-                  color_discrete_map={"Valor Propiedad":"#004e92", "Renta Acumulada":"#28a745"})
-st.plotly_chart(fig_area, use_container_width=True)
-
-# --- 7. PDF ---
+# --- 7. PDF GENERATOR (CORREGIDO) ---
 class PDF(FPDF):
     def header(self):
         self.set_fill_color(0, 78, 146)
@@ -249,92 +249,98 @@ class PDF(FPDF):
         self.set_font('Arial', 'B', 20)
         self.set_text_color(255, 255, 255)
         self.cell(0, 10, '', 0, 1)
-        self.cell(0, 10, 'REPORTE FINANCIERO', 0, 1, 'R')
+        self.cell(0, 10, 'REPORTE DE INVERSION', 0, 1, 'R')
         self.ln(10)
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
         self.set_text_color(128)
-        self.cell(0, 10, 'Ananda Kino - Confidencial', 0, 0, 'C')
+        self.cell(0, 10, 'Ananda Kino - Documento Informativo', 0, 0, 'C')
 
 def create_pdf():
     pdf = PDF()
     pdf.add_page()
     
-    # 1. Detalles
+    # TITULO
     pdf.set_font('Arial', 'B', 16)
     pdf.set_text_color(0, 78, 146)
     pdf.cell(0, 10, f'Propiedad: Casa en Lote {num_lote_selec}', 0, 1)
+    
+    # FICHA
     pdf.set_font('Arial', '', 12)
     pdf.set_text_color(0)
-    pdf.cell(0, 8, f'Terreno: {m2_terreno:.2f} m2 | Construcción: {m2_construccion:.2f} m2', 0, 1)
+    pdf.cell(0, 8, f'Terreno: {m2_terreno:.2f} m2 | Construccion: {m2_construccion:.2f} m2', 0, 1)
     
-    # 2. Precios
+    # PRECIOS
     pdf.ln(5)
     pdf.set_fill_color(240, 245, 255)
     pdf.set_font('Arial', 'B', 11)
-    pdf.cell(100, 8, 'Inversión', 1, 0, 'L', 1)
+    pdf.cell(100, 8, 'Concepto', 1, 0, 'L', 1)
     pdf.cell(60, 8, 'Monto', 1, 1, 'R', 1)
     pdf.set_font('Arial', '', 11)
     pdf.cell(100, 8, f'Precio Preventa (Lista {lista_seleccionada})', 1, 0)
     pdf.cell(60, 8, f'${precio_lista_actual:,.2f}', 1, 1, 'R')
-    pdf.cell(100, 8, 'Valor Futuro (Feb 2027)', 1, 0)
+    pdf.cell(100, 8, 'Valor Mercado (Feb 2027)', 1, 0)
     pdf.cell(60, 8, f'${precio_final_mercado:,.2f}', 1, 1, 'R')
     
-    # 3. Competencia
+    # COMPARATIVA (NUEVO BLOQUE)
     pdf.ln(10)
     pdf.set_font('Arial', 'B', 14)
     pdf.set_text_color(0, 78, 146)
     pdf.cell(0, 10, 'Comparativa de Mercado', 0, 1)
+    
     pdf.set_font('Arial', 'B', 10)
     pdf.set_text_color(0)
     pdf.set_fill_color(220)
-    pdf.cell(50, 8, 'Proyecto', 1, 0, 'C', 1)
-    pdf.cell(40, 8, 'Precio Aprox', 1, 0, 'C', 1)
+    pdf.cell(60, 8, 'Desarrollo', 1, 0, 'C', 1)
+    pdf.cell(40, 8, 'Tipo', 1, 0, 'C', 1)
     pdf.cell(40, 8, 'Precio M2', 1, 1, 'C', 1)
+    
     pdf.set_font('Arial', '', 10)
     for index, row in df_comp.iterrows():
-        pdf.cell(50, 8, row['Proyecto'], 1, 0)
-        pdf.cell(40, 8, f"${row['Precio']:,.0f}", 1, 0, 'R')
+        pdf.cell(60, 8, row['Proyecto'], 1, 0)
+        pdf.cell(40, 8, row['Tipo'], 1, 0, 'C')
         pdf.cell(40, 8, f"${row['PrecioM2']:,.0f}", 1, 1, 'R')
         
-    # 4. Rentas
+    # CARACTERISTICAS
+    pdf.ln(5)
+    pdf.set_font('Arial', 'I', 10)
+    pdf.multi_cell(0, 6, "Ventajas Ananda: Sin vecinos pared con pared, cochera doble privada, cuotas de mantenimiento bajas y propiedad de la tierra.")
+
+    # PROYECCION
     pdf.ln(10)
     pdf.set_font('Arial', 'B', 14)
     pdf.set_text_color(0, 78, 146)
-    pdf.cell(0, 10, 'Negocio de Rentas (Estimado)', 0, 1)
-    pdf.set_font('Arial', '', 11)
-    pdf.set_text_color(0)
-    pdf.multi_cell(0, 6, f"Escenario: Ocupación {ocupacion_pct}% | Tarifa ${tarifa:,.0f} | Admin {comision_pct*100}% | Mto ${mto_mensual:,.0f}")
-    pdf.ln(2)
-    pdf.set_font('Arial', 'B', 11)
-    pdf.cell(100, 8, 'Ingreso Neto Anual (Bolsillo):', 1, 0)
-    pdf.cell(60, 8, f'${neto_anual:,.2f}', 1, 1, 'R')
+    pdf.cell(0, 10, 'Proyeccion Patrimonial (5 Anios)', 0, 1)
     
-    # 5. Proyección
-    pdf.ln(10)
-    pdf.set_font('Arial', 'B', 14)
-    pdf.set_text_color(0, 78, 146)
-    pdf.cell(0, 10, 'Proyección Patrimonial (5 Años)', 0, 1)
     pdf.set_font('Arial', 'B', 10)
     pdf.set_text_color(0)
     pdf.set_fill_color(220)
-    pdf.cell(30, 8, 'Año', 1, 0, 'C', 1)
+    pdf.cell(30, 8, 'Year', 1, 0, 'C', 1)
     pdf.cell(50, 8, 'Valor Propiedad', 1, 0, 'C', 1)
-    pdf.cell(50, 8, 'Renta Acumulada', 1, 0, 'C', 1)
-    pdf.cell(50, 8, 'Patrimonio Total', 1, 1, 'C', 1)
+    pdf.cell(50, 8, 'Renta Acumulada', 1, 1, 'C', 1)
+    
     pdf.set_font('Arial', '', 10)
     for row in data_proy:
         pdf.cell(30, 8, str(row['Año']), 1, 0, 'C')
         pdf.cell(50, 8, f"${row['Valor Propiedad']:,.0f}", 1, 0, 'R')
-        pdf.cell(50, 8, f"${row['Renta Acumulada']:,.0f}", 1, 0, 'R')
-        pdf.cell(50, 8, f"${row['Patrimonio Total']:,.0f}", 1, 1, 'R')
+        pdf.cell(50, 8, f"${row['Renta Acumulada']:,.0f}", 1, 1, 'R')
 
-    return pdf.output(dest='S').encode('latin-1')
+    # TOTAL
+    pdf.ln(5)
+    total_val = data_proy[-1]['Valor Propiedad'] + data_proy[-1]['Renta Acumulada']
+    pdf.set_font('Arial', 'B', 12)
+    pdf.set_text_color(40, 167, 69)
+    pdf.cell(0, 10, f'PATRIMONIO TOTAL PROYECTADO (2032): ${total_val:,.2f}', 0, 1, 'C')
+
+    return pdf.output(dest='S').encode('latin-1', 'replace')
 
 st.markdown("---")
 c_down1, c_down2 = st.columns([3,1])
-with c_down1: st.markdown("##### 📄 Descargar PDF Completo")
+with c_down1: st.markdown("##### 📄 Descargar Reporte Completo")
 with c_down2:
-    try: st.download_button("DESCARGAR PDF", create_pdf(), file_name=f"Reporte_Ananda_{num_lote_selec}.pdf")
-    except: st.error("Error PDF")
+    try:
+        pdf_bytes = create_pdf()
+        st.download_button("DESCARGAR PDF", pdf_bytes, file_name=f"Reporte_Ananda_{num_lote_selec}.pdf", mime='application/pdf')
+    except Exception as e:
+        st.error(f"Error PDF: {e}")
