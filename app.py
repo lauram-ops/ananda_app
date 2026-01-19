@@ -127,7 +127,7 @@ st.sidebar.info(f"📋 **Ficha Lote {num_lote_selec}:**\n- Terreno: {m2_terreno:
 st.title(f"Residencia Ananda | Lote {num_lote_selec}")
 if "Vendido" in lote_str_selec: st.warning("⛔ LOTE VENDIDO")
 
-# BLOQUE FICHA TÉCNICA (SIN MINISPLITS)
+# BLOQUE FICHA TÉCNICA
 st.markdown("""
 <div class="specs-box">
     <strong>🏡 MODELO ANANDA (Casa Independiente)</strong><br><br>
@@ -157,12 +157,11 @@ with c1: st.markdown(f"""<div class="metric-card"><div>Inversión Inicial</div><
 with c2: st.markdown(f"""<div class="metric-card" style="border:2px solid #ffc107; background:#fffdf5"><div>Valor Entrega</div><div class="future-number">${precio_final_mercado:,.0f}</div><small>Feb 2027</small></div>""", unsafe_allow_html=True)
 with c3: st.markdown(f"""<div class="metric-card" style="background:#f0fff4; border:2px solid #28a745;"><div>Plusvalía Ganada</div><div class="big-number" style="color:#28a745">+${plusvalia_preventa:,.0f}</div><small>Al cierre de preventa</small></div>""", unsafe_allow_html=True)
 
-# --- 4. PROYECCIÓN PATRIMONIAL (GRAFICA CON RENTAS + TABLA SOLO VALOR) ---
+# --- 4. PROYECCIÓN PATRIMONIAL ---
 st.markdown("---")
 st.header("📈 Tu Patrimonio en 5 Años (2028-2032)")
 st.caption("Gráfica: Valor Propiedad + Rentas Acumuladas | Tabla: Valor Propiedad.")
 
-# Variables estimadas para la gráfica (detalle en sección rentas)
 tarifa_base = 4500
 ocupacion_base = 0.45
 inflacion = 0.05
@@ -175,8 +174,6 @@ acum_rentas = 0
 
 for i, y in enumerate(years):
     val_prop = val_prop * (1 + plusvalia_anual)
-    
-    # Renta simple para la visualización del gráfico
     t_act = tarifa_base * ((1+inflacion)**i)
     neto_anual_est = (t_act * 365 * ocupacion_base) * 0.70 
     acum_rentas += neto_anual_est
@@ -193,7 +190,6 @@ df_proy = pd.DataFrame(data_proy)
 col_graf_plus, col_tab_plus = st.columns([2, 1])
 
 with col_graf_plus:
-    # GRÁFICA: VALOR + RENTAS
     fig_area = px.area(df_proy, x="Año", y=["Valor Propiedad", "Renta Acumulada"], 
                       title="Crecimiento Total (Plusvalía + Rentas)",
                       color_discrete_map={"Valor Propiedad":"#004e92", "Renta Acumulada":"#28a745"})
@@ -201,7 +197,6 @@ with col_graf_plus:
     st.plotly_chart(fig_area, use_container_width=True)
 
 with col_tab_plus:
-    # TABLA: SOLO VALOR PROPIEDAD (AÑADIDO AÑO A AÑO)
     st.subheader("Evolución Valor Casa")
     st.markdown(f"""
     <table class="comp-table">
@@ -210,10 +205,10 @@ with col_tab_plus:
     </table>
     """, unsafe_allow_html=True)
 
-# --- 5. ANANDA VS EL MERCADO (CARACTERISTICAS SOLO ANANDA) ---
+# --- 5. ANANDA VS EL MERCADO (MODIFICADO) ---
 st.markdown("---")
-st.header("🏆 Ananda vs Competencia")
-st.caption("Comparativa de valor y características.")
+st.header("🏆 Ananda vs El Mercado")
+st.caption("Comparativa directa contra desarrollos verticales (Condos).")
 
 precio_m2_ananda = precio_lista_actual / m2_construccion if m2_construccion > 0 else 0
 data_comp = [
@@ -227,13 +222,15 @@ df_comp = pd.DataFrame(data_comp)
 col_feat, col_price = st.columns([1, 1])
 
 with col_feat:
-    st.subheader("Características Exclusivas")
-    # TABLA SOLO DE ANANDA (SIN COLUMNA CONDOS)
+    # AQUI ESTÁ EL PRECIO POR M2 DINÁMICO ARRIBA DE LA TABLA
+    st.metric(label=f"Tu Precio por M² (Lote {num_lote_selec})", value=f"${precio_m2_ananda:,.0f}")
+    
+    st.subheader("Diferenciadores Clave")
     st.markdown("""
     <table class="comp-table feature-table">
         <tr><th>Ventajas de tu Casa en Ananda</th></tr>
         <tr><td><span class='check'>✔</span> Precio por M² más bajo del mercado</td></tr>
-        <tr><td><span class='check'>✔</span> Privacidad Total (Sin pared compartida)</td></tr>
+        <tr><td><span class='check'>✔</span> Privacidad (Sin vecinos arriba ni abajo)</td></tr>
         <tr><td><span class='check'>✔</span> Cochera Doble</td></tr>
         <tr><td><span class='check'>✔</span> Mantenimiento Bajo (No frente al mar)</td></tr>
         <tr><td><span class='check'>✔</span> Dueño de la Tierra + Construcción</td></tr>
@@ -355,7 +352,7 @@ def create_pdf():
     
     features = [
         "Precio por M2 mas bajo del mercado",
-        "Privacidad Total (Sin pared compartida)",
+        "Privacidad (Sin vecinos arriba ni abajo)",
         "Cochera Doble",
         "Mantenimiento Bajo (No frente al mar)",
         "Duenio de la Tierra + Construccion"
