@@ -90,7 +90,13 @@ if df_raw is None: df_raw = pd.DataFrame({'lote': range(1, 45), 'status': ['Disp
 try: st.sidebar.image("logo.png", use_column_width=True)
 except: st.sidebar.header("🏠 Ananda Residencial")
 
-st.sidebar.header("1. Configuración")
+# DATOS DEL CLIENTE (NUEVO)
+st.sidebar.header("👤 Personalización")
+cliente_nombre = st.sidebar.text_input("Nombre del Cliente:", value="")
+asesor_nombre = st.sidebar.text_input("Asesor de Ventas:", value="")
+
+st.sidebar.markdown("---")
+st.sidebar.header("⚙️ Configuración")
 lista_seleccionada = st.sidebar.selectbox("Lista Vigente:", range(1, 11), index=0)
 
 # Selector Lote
@@ -120,8 +126,7 @@ col_l10 = next((c for c in df_raw.columns if 'lista_10' in c), None)
 precio_final_mercado = clean_currency(row_lote[col_l10]) if col_l10 else precio_lista_actual * 1.30
 plusvalia_preventa = precio_final_mercado - precio_lista_actual
 
-st.sidebar.markdown("---")
-st.sidebar.info(f"📋 **Ficha Lote {num_lote_selec}:**\n- Terreno: {m2_terreno:.0f} m²\n- Construcción: {m2_construccion:.0f} m²")
+st.sidebar.info(f"📋 **Lote {num_lote_selec}:** {m2_terreno:.0f}m² Terreno | {m2_construccion:.0f}m² Const.")
 
 # --- 3. PANEL PRINCIPAL ---
 st.title(f"Residencia Ananda | Lote {num_lote_selec}")
@@ -205,10 +210,9 @@ with col_tab_plus:
     </table>
     """, unsafe_allow_html=True)
 
-# --- 5. ANANDA VS EL MERCADO (MODIFICADO) ---
+# --- 5. ANANDA VS EL MERCADO ---
 st.markdown("---")
 st.header("🏆 Ananda vs El Mercado")
-st.caption("Comparativa directa contra desarrollos verticales (Condos).")
 
 precio_m2_ananda = precio_lista_actual / m2_construccion if m2_construccion > 0 else 0
 data_comp = [
@@ -222,9 +226,7 @@ df_comp = pd.DataFrame(data_comp)
 col_feat, col_price = st.columns([1, 1])
 
 with col_feat:
-    # AQUI ESTÁ EL PRECIO POR M2 DINÁMICO ARRIBA DE LA TABLA
     st.metric(label=f"Tu Precio por M² (Lote {num_lote_selec})", value=f"${precio_m2_ananda:,.0f}")
-    
     st.subheader("Diferenciadores Clave")
     st.markdown("""
     <table class="comp-table feature-table">
@@ -289,18 +291,25 @@ class PDF(FPDF):
         self.set_font('Arial', 'B', 20)
         self.set_text_color(255, 255, 255)
         self.cell(0, 10, '', 0, 1)
-        self.cell(0, 10, 'REPORTE DE INVERSION', 0, 1, 'R')
+        self.cell(0, 10, 'COTIZACION & NEGOCIO', 0, 1, 'R')
         self.ln(10)
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
         self.set_text_color(128)
-        self.cell(0, 10, 'Ananda Kino - Documento Informativo', 0, 0, 'C')
+        self.cell(0, 10, f'Ananda Kino | {date.today().strftime("%d/%m/%Y")}', 0, 0, 'C')
 
 def create_pdf():
     pdf = PDF()
     pdf.add_page()
     
+    # 0. HEADER CLIENTE
+    pdf.set_font('Arial', '', 10)
+    pdf.set_text_color(100)
+    if cliente_nombre: pdf.cell(0, 5, f'Preparado para: {cliente_nombre}', 0, 1, 'R')
+    if asesor_nombre: pdf.cell(0, 5, f'Asesor: {asesor_nombre}', 0, 1, 'R')
+    pdf.ln(5)
+
     # 1. Detalles
     pdf.set_font('Arial', 'B', 16)
     pdf.set_text_color(0, 78, 146)
@@ -325,50 +334,75 @@ def create_pdf():
     pdf.cell(100, 8, 'Valor Mercado (Feb 2027)', 1, 0)
     pdf.cell(60, 8, f'${precio_final_mercado:,.2f}', 1, 1, 'R')
     
-    # 3. Proyección Anual
+    # 3. Rentas Detallado (NUEVO DESGLOSE)
     pdf.ln(10)
     pdf.set_font('Arial', 'B', 14)
     pdf.set_text_color(0, 78, 146)
-    pdf.cell(0, 10, 'Proyeccion de Plusvalia (5 Anios)', 0, 1)
+    pdf.cell(0, 10, 'Analisis de Negocio (Estimado Anual)', 0, 1)
+    
+    pdf.set_font('Arial', '', 11)
+    pdf.set_text_color(0)
+    pdf.cell(100, 8, 'Ingresos Brutos (Renta):', 1, 0)
+    pdf.cell(60, 8, f'+ ${ingreso_bruto:,.2f}', 1, 1, 'R')
+    
+    pdf.set_text_color(150, 0, 0)
+    pdf.cell(100, 8, 'Gastos Operativos (Admin + Mto):', 1, 0)
+    pdf.cell(60, 8, f'- ${total_gastos:,.2f}', 1, 1, 'R')
+    
+    pdf.set_font('Arial', 'B', 12)
+    pdf.set_text_color(40, 167, 69)
+    pdf.cell(100, 8, 'UTILIDAD NETA (Bolsillo):', 1, 0)
+    pdf.cell(60, 8, f'= ${neto_anual:,.2f}', 1, 1, 'R')
+    
+    pdf.set_font('Arial', 'I', 10)
+    pdf.set_text_color(100)
+    pdf.cell(0, 8, f'Retorno sobre Inversion (ROI): {roi:.1f}% Anual', 0, 1, 'R')
+
+    # 4. Proyección Anual
+    pdf.ln(5)
+    pdf.set_font('Arial', 'B', 14)
+    pdf.set_text_color(0, 78, 146)
+    pdf.cell(0, 10, 'Crecimiento Patrimonial (5 Anios)', 0, 1)
     
     pdf.set_font('Arial', 'B', 10)
     pdf.set_text_color(0)
     pdf.set_fill_color(220)
-    pdf.cell(80, 8, 'Year', 1, 0, 'C', 1)
-    pdf.cell(80, 8, 'Valor Propiedad', 1, 1, 'C', 1)
+    pdf.cell(40, 8, 'Year', 1, 0, 'C', 1)
+    pdf.cell(60, 8, 'Valor Propiedad', 1, 0, 'C', 1)
+    pdf.cell(60, 8, 'Ingreso Renta Acum.', 1, 1, 'C', 1)
     
     pdf.set_font('Arial', '', 10)
     for index, row in df_proy.iterrows():
-        pdf.cell(80, 8, str(row['Año']), 1, 0, 'C')
-        pdf.cell(80, 8, f"${row['Valor Propiedad']:,.0f}", 1, 1, 'R')
+        pdf.cell(40, 8, str(row['Año']), 1, 0, 'C')
+        pdf.cell(60, 8, f"${row['Valor Propiedad']:,.0f}", 1, 0, 'R')
+        pdf.cell(60, 8, f"${row['Renta Acumulada']:,.0f}", 1, 1, 'R')
 
-    # 4. Características
-    pdf.ln(10)
+    # 5. Características
+    pdf.ln(5)
     pdf.set_font('Arial', 'B', 14)
     pdf.set_text_color(0, 78, 146)
-    pdf.cell(0, 10, 'Ventajas Exclusivas Ananda', 0, 1)
-    pdf.set_font('Arial', '', 11)
+    pdf.cell(0, 10, 'Ventajas Ananda', 0, 1)
+    pdf.set_font('Arial', '', 10)
     pdf.set_text_color(0)
     
     features = [
-        "Precio por M2 mas bajo del mercado",
+        "Precio por M2 mas competitivo",
         "Privacidad (Sin vecinos arriba ni abajo)",
         "Cochera Doble",
-        "Mantenimiento Bajo (No frente al mar)",
-        "Duenio de la Tierra + Construccion"
+        "Mantenimiento Eficiente"
     ]
-    
     for f in features:
-        pdf.cell(0, 8, f"- {f}", 0, 1)
+        pdf.cell(0, 6, f"- {f}", 0, 1)
 
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
 st.markdown("---")
 c_down1, c_down2 = st.columns([3,1])
-with c_down1: st.markdown("##### 📄 Descargar Reporte Completo")
+with c_down1: st.markdown("##### 📄 Descargar PDF Personalizado")
 with c_down2:
     try:
         pdf_bytes = create_pdf()
-        st.download_button("DESCARGAR PDF", pdf_bytes, file_name=f"Reporte_Ananda_{num_lote_selec}.pdf", mime='application/pdf')
+        filename_pdf = f"Cotizacion_{cliente_nombre.replace(' ','_') if cliente_nombre else 'Ananda'}.pdf"
+        st.download_button("DESCARGAR PDF", pdf_bytes, file_name=filename_pdf, mime='application/pdf')
     except Exception as e:
         st.error(f"Error PDF: {e}")
