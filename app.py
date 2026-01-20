@@ -276,7 +276,7 @@ for i, y in enumerate(years):
 df_proy = pd.DataFrame(data_proy)
 valor_final_5y = df_proy.iloc[-1]['Valor Propiedad']
 neto_bolsillo_est = data_proy[1]['Renta Acumulada'] # Primer año de renta completo
-roi_est = (neto_bolsillo_est / precio_final_venta) * 100
+roi_renta = (neto_bolsillo_est / precio_final_venta) * 100
 
 col_plus_1, col_plus_2 = st.columns([2, 1])
 with col_plus_1:
@@ -333,7 +333,7 @@ with c4b:
     fig_pie.update_layout(height=250, margin=dict(t=0,b=0,l=0,r=0))
     st.plotly_chart(fig_pie, use_container_width=True)
 
-# --- SECCIÓN 5: PLAN DE INVERSIÓN (DISEÑO MEJORADO) ---
+# --- SECCIÓN 5: PLAN DE INVERSIÓN ---
 st.markdown('<div class="section-title">5. Plan de Inversión</div>', unsafe_allow_html=True)
 
 col_izq, col_der = st.columns([1, 1])
@@ -379,16 +379,24 @@ if plazo_meses > 0:
         </table>
         """, unsafe_allow_html=True)
 
-# --- PDF GENERATOR (MEJORADO) ---
+# --- PDF GENERATOR (ACTUALIZADO) ---
 class PDF(FPDF):
     def header(self):
-        try: self.image('logo.png', 10, 8, 30)
+        # LOGO GRANDE (60 de ancho)
+        try: self.image('logo.png', 10, 8, 60)
         except: pass
-        self.set_y(12)
-        self.set_font('Arial', 'B', 14)
+        
+        self.set_y(15)
+        self.set_font('Arial', 'B', 16)
         self.set_text_color(0, 78, 146)
         self.cell(0, 10, 'COTIZACION PREVENTA ANANDA', 0, 1, 'R')
-        self.ln(5)
+        
+        # WEB
+        self.set_font('Arial', '', 10)
+        self.set_text_color(100)
+        self.cell(0, 5, 'www.anandakino.mx', 0, 1, 'R', link='https://www.anandakino.mx')
+        self.ln(15)
+
     def footer(self):
         self.set_y(-15)
         self.set_font('Arial', 'I', 8)
@@ -478,7 +486,7 @@ def create_pdf():
     pdf.set_font('Arial', 'B', 12)
     pdf.cell(0, 12, f' LIQUIDACION FINAL: ${saldo_final:,.2f} (FEBRERO 2027)', 0, 1, 'C', 1)
     
-    # 6. NEGOCIO
+    # 6. NEGOCIO & LEGAL
     pdf.ln(8)
     pdf.set_text_color(0, 78, 146)
     pdf.set_font('Arial', 'B', 12)
@@ -492,9 +500,9 @@ def create_pdf():
     pdf.cell(100, 6, "Valor Proyectado (5 Anios):", 0, 0)
     pdf.cell(80, 6, f"${valor_final_5y:,.2f}", 0, 1, 'R')
     pdf.cell(100, 6, "Utilidad Renta Anual Estimada:", 0, 0)
-    pdf.cell(80, 6, f"${neto_bolsillo:,.2f} (ROI {roi_renta:.1f}%)", 0, 1, 'R')
+    pdf.cell(80, 6, f"${neto_bolsillo_est:,.2f} (ROI {roi_renta:.1f}%)", 0, 1, 'R')
     
-    # Disclaimer footer
+    # Disclaimer
     pdf.ln(5)
     pdf.set_font('Arial', 'I', 8)
     pdf.set_text_color(100)
