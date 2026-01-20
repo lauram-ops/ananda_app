@@ -16,26 +16,51 @@ st.markdown("""
     [data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #F9FCFF 0%, #FFFFFF 100%); }
     h1, h2, h3, .metric-label { color: #004e92 !important; font-family: 'Helvetica Neue', sans-serif; }
     
-    /* Títulos de Sección Atractivos */
+    /* Títulos de Sección */
     .section-title { 
         background-color: #f0f7ff; 
         padding: 15px; 
         border-radius: 8px; 
         border-left: 6px solid #004e92; 
         color: #004e92; 
-        font-size: 24px; 
+        font-size: 22px; 
         font-weight: 800; 
-        margin-top: 20px;
+        margin-top: 25px;
         margin-bottom: 20px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
     
-    /* Cajas Financieras */
+    /* Cajas Financieras (Arriba) */
     .fin-card { background: white; padding: 15px; border-radius: 10px; border: 1px solid #e1e5e8; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05); height: 100%; }
     .fin-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
     .fin-val { font-size: 24px; font-weight: 900; color: #004e92; }
     .fin-discount { font-size: 20px; font-weight: 700; color: #dc3545; }
     .fin-final { font-size: 26px; font-weight: 900; color: #28a745; }
+
+    /* TARJETAS DE PAGO (ESTILO NUEVO) */
+    .payment-card-blue {
+        background-color: white;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: 0 8px 20px rgba(0, 78, 146, 0.15);
+        border-top: 6px solid #004e92;
+        height: 100%;
+    }
+    .payment-card-dark {
+        background-color: white;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: 0 8px 20px rgba(0,0,0, 0.15);
+        border-top: 6px solid #2c3e50;
+        height: 100%;
+    }
+    .pay-title { font-size: 14px; color: #7f8c8d; font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
+    .pay-amount { font-size: 36px; font-weight: 900; color: #004e92; margin-bottom: 5px; }
+    .pay-amount-dark { font-size: 36px; font-weight: 900; color: #2c3e50; margin-bottom: 5px; }
+    .pay-sub { font-size: 14px; color: #00c6ff; font-weight: 600; }
+    .pay-sub-dark { font-size: 14px; color: #7f8c8d; font-weight: 600; }
 
     /* Tablas y Listas */
     .comp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -49,47 +74,6 @@ st.markdown("""
     .specs-item { background: #fff; padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #004e92; border: 1px solid #004e92; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
     .stButton>button { background-color: #004e92; color: white; font-weight: bold; width: 100%; border-radius: 8px; height: 50px;}
-    
-    /* Nuevos Estilos para la Sección de Pagos */
-    .payment-card {
-        background-color: white;
-        border-radius: 15px;
-        padding: 25px;
-        text-align: center;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        border: 1px solid #eef2f6;
-    }
-    .payment-title {
-        color: #6c757d;
-        font-size: 14px;
-        font-weight: 700;
-        text-transform: uppercase;
-        margin-bottom: 10px;
-    }
-    .payment-amount {
-        color: #004e92;
-        font-size: 36px;
-        font-weight: 900;
-        margin-bottom: 10px;
-    }
-    .payment-subtitle {
-        color: #00c6ff;
-        font-size: 14px;
-        font-weight: 600;
-    }
-    .payment-table-header {
-        background-color: #004e92;
-        color: white;
-        padding: 12px;
-        text-align: left;
-        font-weight: bold;
-    }
-    .payment-table-row {
-        background-color: white;
-        border-bottom: 1px solid #eee;
-        padding: 12px;
-        text-align: left;
-    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -225,7 +209,6 @@ st.markdown("""
 # --- SECCIÓN 2: MERCADO & PRECIO ---
 st.markdown('<div class="section-title">2. Ananda vs El Mercado</div>', unsafe_allow_html=True)
 
-# BLOQUE DE PRECIO
 c1, c2, c3 = st.columns(3)
 with c1: st.markdown(f"""<div class="fin-card"><div class="fin-label">Precio de Lista</div><div class="fin-val">${precio_lista_base:,.0f}</div></div>""", unsafe_allow_html=True)
 with c2: st.markdown(f"""<div class="fin-card"><div class="fin-label">Tu Descuento ({descuento_pct*100:.1f}%)</div><div class="fin-discount">-${monto_descuento:,.0f}</div></div>""", unsafe_allow_html=True)
@@ -269,7 +252,6 @@ with col_comp_2:
 # --- SECCIÓN 3: PLUSVALÍA ---
 st.markdown('<div class="section-title">3. Proyección de Plusvalía</div>', unsafe_allow_html=True)
 
-# Variables Proyección
 tarifa_base = 4500
 ocupacion_base = 0.45
 inflacion = 0.05
@@ -351,35 +333,45 @@ with c4b:
     fig_pie.update_layout(height=250, margin=dict(t=0,b=0,l=0,r=0))
     st.plotly_chart(fig_pie, use_container_width=True)
 
-# --- SECCIÓN 5: PLAN DE INVERSIÓN (NUEVO DISEÑO) ---
+# --- SECCIÓN 5: PLAN DE INVERSIÓN (DISEÑO LIMPIO) ---
 st.markdown('<div class="section-title">5. Plan de Inversión</div>', unsafe_allow_html=True)
 
 col_izq, col_der = st.columns([1, 1])
 
 with col_izq:
     st.markdown(f"""
-        <div class="payment-card">
-            <div class="payment-title">ENGANCHE TOTAL ({enganche_pct}%)</div>
-            <div class="payment-amount">${monto_enganche:,.2f}</div>
-            <div class="payment-subtitle">A pagar en {plazo_meses} meses</div>
+        <div class="payment-card-blue">
+            <div class="pay-title">ENGANCHE TOTAL ({enganche_pct}%)</div>
+            <div class="pay-amount">${monto_enganche:,.2f}</div>
+            <div class="pay-sub">A pagar en {plazo_meses} meses</div>
         </div>
     """, unsafe_allow_html=True)
 
 with col_der:
     st.markdown(f"""
-        <div class="payment-card">
-            <div class="payment-title">LIQUIDACIÓN FINAL</div>
-            <div class="payment-amount" style="color:#2c3e50">${saldo_final:,.2f}</div>
-            <div class="payment-subtitle" style="color:#7f8c8d">Contra Entrega (Febrero 2027)</div>
+        <div class="payment-card-dark">
+            <div class="pay-title">LIQUIDACIÓN FINAL</div>
+            <div class="pay-amount-dark">${saldo_final:,.2f}</div>
+            <div class="pay-sub-dark">Contra Entrega (Febrero 2027)</div>
         </div>
     """, unsafe_allow_html=True)
 
 if plazo_meses > 0:
     st.markdown("### 📅 Desglose de Mensualidades")
     
-    # Crear tabla HTML
-    html_table = """
-    <table style="width:100%; border-collapse: collapse; margin-top: 20px;">
+    # Construcción Segura de la Tabla HTML
+    rows = ""
+    for i in range(1, plazo_meses + 1):
+        rows += f"""
+        <tr style="border-bottom: 1px solid #eee;">
+            <td style="padding: 12px; color: #333;">{i}</td>
+            <td style="padding: 12px; color: #333;">Mensualidad Enganche</td>
+            <td style="padding: 12px; text-align: right; font-weight: bold; color: #333;">${mensualidad:,.2f}</td>
+        </tr>
+        """
+    
+    table_html = f"""
+    <table style="width:100%; border-collapse: collapse; margin-top: 15px; border: 1px solid #e1e5e8; border-radius: 8px; overflow: hidden;">
         <thead>
             <tr style="background-color: #004e92; color: white;">
                 <th style="padding: 12px; text-align: left;">#</th>
@@ -388,19 +380,13 @@ if plazo_meses > 0:
             </tr>
         </thead>
         <tbody>
+            {rows}
+        </tbody>
+    </table>
     """
-    for i in range(1, plazo_meses + 1):
-        html_table += f"""
-            <tr style="border-bottom: 1px solid #eee;">
-                <td style="padding: 12px;">{i}</td>
-                <td style="padding: 12px;">Mensualidad Enganche</td>
-                <td style="padding: 12px; text-align: right; font-weight: bold;">${mensualidad:,.2f}</td>
-            </tr>
-        """
-    html_table += "</tbody></table>"
-    st.markdown(html_table, unsafe_allow_html=True)
+    st.markdown(table_html, unsafe_allow_html=True)
 
-# --- PDF GENERATOR (BRIEF DE VENTA) ---
+# --- PDF GENERATOR ---
 class PDF(FPDF):
     def header(self):
         try: self.image('logo.png', 10, 8, 30)
@@ -474,7 +460,7 @@ def create_pdf():
     pdf.cell(60, 6, "Valor Proyectado (5 Anios):", 0)
     pdf.cell(40, 6, f"${valor_final_5y:,.0f}", 0, 1, 'R')
 
-    # 4. PLAN DE INVERSION (NUEVO DISEÑO PDF)
+    # 4. PLAN DE INVERSION
     pdf.ln(4)
     pdf.set_fill_color(0, 78, 146)
     pdf.set_text_color(255)
@@ -485,7 +471,6 @@ def create_pdf():
     pdf.set_font('Arial', '', 9)
     pdf.ln(2)
     
-    # Tabla de pagos
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(30, 6, "CONCEPTO", 1, 0, 'C', 1)
     pdf.cell(40, 6, "DETALLE", 1, 0, 'C', 1)
@@ -539,7 +524,7 @@ def create_pdf():
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 8)
     
-    features = ["Precio por M2 mas bajo", "Privacidad Total", "Cochera Doble", "Mantenimiento Bajo", "Dueño de Tierra + Casa"]
+    features = ["Precio por M2 mas bajo", "Privacidad Total", "Cochera Doble", "Mantenimiento Bajo", "Duenio de Tierra + Casa"]
     for i in range(0, len(features), 2):
         t1 = f"- {features[i]}"
         try: t2 = f"- {features[i+1]}" if i+1 < len(features) else ""
@@ -557,7 +542,7 @@ def create_pdf():
 
 st.markdown("---")
 c_down1, c_down2 = st.columns([3,1])
-with c_down1: st.markdown("##### 📄 Descargar Cotización Preventa")
+with c_down1: st.markdown("##### 📄 Descargar Cotización PDF")
 with c_down2:
     try:
         pdf_bytes = create_pdf()
