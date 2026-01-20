@@ -8,7 +8,7 @@ from datetime import date
 import base64
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="Ananda Kino | Oportunidad Preventa", page_icon="💎", layout="wide")
+st.set_page_config(page_title="Ananda Kino | Preventa", page_icon="💎", layout="wide")
 
 # --- ESTILOS VISUALES ---
 st.markdown("""
@@ -16,19 +16,37 @@ st.markdown("""
     [data-testid="stAppViewContainer"] { background: linear-gradient(180deg, #F9FCFF 0%, #FFFFFF 100%); }
     h1, h2, h3, .metric-label { color: #004e92 !important; font-family: 'Helvetica Neue', sans-serif; }
     
-    /* Cajas de Métricas */
-    .financial-box { background: white; padding: 15px; border-radius: 10px; border: 1px solid #ddd; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); height: 100%; }
-    .label-fin { font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold; }
-    .value-fin { font-size: 20px; color: #333; font-weight: 800; }
-    .value-highlight { font-size: 22px; color: #28a745; font-weight: 900; }
-    .value-discount { font-size: 18px; color: #dc3545; font-weight: bold; }
+    /* Títulos de Sección Atractivos */
+    .section-title { 
+        background-color: #f0f7ff; 
+        padding: 15px; 
+        border-radius: 8px; 
+        border-left: 6px solid #004e92; 
+        color: #004e92; 
+        font-size: 24px; 
+        font-weight: 800; 
+        margin-top: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
     
+    /* Cajas Financieras */
+    .fin-card { background: white; padding: 15px; border-radius: 10px; border: 1px solid #e1e5e8; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+    .fin-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+    .fin-val { font-size: 24px; font-weight: 900; color: #004e92; }
+    .fin-discount { font-size: 20px; font-weight: 700; color: #dc3545; }
+    .fin-final { font-size: 26px; font-weight: 900; color: #28a745; }
+
     /* Tablas y Listas */
-    .comp-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-    .comp-table th { background-color: #004e92; color: white; padding: 8px; text-align: center; }
+    .comp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .comp-table th { background-color: #004e92; color: white; padding: 10px; text-align: center; }
     .comp-table td { border-bottom: 1px solid #eee; padding: 8px; text-align: center; color: #444; }
-    .specs-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-    .specs-item { background: #e3f2fd; color: #004e92; padding: 5px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; border: 1px solid #bbdefb; }
+    .feature-table td { text-align: left; padding: 10px; font-weight: 500;}
+    .check { color: green; font-weight: bold; }
+    
+    /* Specs */
+    .specs-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+    .specs-item { background: #fff; padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #004e92; border: 1px solid #004e92; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
     .stButton>button { background-color: #004e92; color: white; font-weight: bold; width: 100%; border-radius: 8px; height: 50px;}
     </style>
@@ -92,7 +110,7 @@ df_raw = load_data()
 if df_raw is None: df_raw = pd.DataFrame({'lote': range(1, 45), 'status': ['Disponible']*44})
 
 # ==============================================================================
-# 🟦 BARRA LATERAL (CONFIGURACIÓN TOTAL)
+# 🟦 BARRA LATERAL (DATOS Y PAGOS)
 # ==============================================================================
 try: st.sidebar.image("logo.png", use_column_width=True)
 except: st.sidebar.header("💎 ANANDA KINO")
@@ -112,7 +130,7 @@ st.sidebar.header("2. Forma de Pago")
 enganche_pct = st.sidebar.select_slider("% Enganche:", options=[15, 20, 25, 30, 40, 50, 60, 70, 80, 90, 95], value=30)
 plazo_meses = st.sidebar.selectbox("Plazo Enganche (Meses):", [0] + list(range(1, 14)), index=12)
 
-# === CÁLCULOS CENTRALIZADOS ===
+# === CÁLCULOS ===
 row_lote = df_raw[df_raw['lote'] == num_lote_selec].iloc[0]
 col_m2 = next((c for c in df_raw.columns if 'm2' in c and 'privativo' in c), None) or next((c for c in df_raw.columns if 'm2' in c), None)
 m2_terreno = clean_currency(row_lote.get(col_m2, 216.0)) if col_m2 else 216.0
@@ -130,13 +148,13 @@ else:
 col_l10 = next((c for c in df_raw.columns if 'lista_10' in c), None)
 precio_futuro_lista10 = clean_currency(row_lote[col_l10]) if col_l10 else precio_lista_base * 1.30
 
-# Calculo Financiero
+# Financiero
 descuento_pct = obtener_descuento(plazo_meses, enganche_pct)
 monto_descuento = precio_lista_base * descuento_pct
 precio_final_venta = precio_lista_base - monto_descuento
-
 plusvalia_preventa = precio_futuro_lista10 - precio_final_venta
 
+# Pagos
 monto_enganche = precio_final_venta * (enganche_pct / 100.0)
 saldo_final = precio_final_venta - monto_enganche
 mensualidad = monto_enganche / plazo_meses if plazo_meses > 0 else 0
@@ -146,11 +164,11 @@ st.sidebar.info(f"📋 **Lote {num_lote_selec}:** {m2_terreno:.0f}m² T | {m2_co
 # ==============================================================================
 # 📄 CUERPO PRINCIPAL
 # ==============================================================================
-st.title(f"💎 Ventajas de Preventa | Lote {num_lote_selec}")
+st.title(f"💎 PREVENTA | Lote {num_lote_selec}")
 if "Vendido" in lote_str_selec: st.error("⛔ ESTE LOTE YA ESTÁ VENDIDO")
 
 # --- SECCIÓN 1: ESPECIFICACIONES ---
-st.markdown('<div class="section-header">1. Residencia Ananda (Especificaciones)</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">1. Residencia Ananda</div>', unsafe_allow_html=True)
 st.markdown("""
 <ul class="specs-list">
     <li class="specs-item">🛏️ 3 Recámaras</li>
@@ -163,9 +181,17 @@ st.markdown("""
 </ul>
 """, unsafe_allow_html=True)
 
-# --- SECCIÓN 2: COMPARATIVO ---
-st.markdown("---")
-st.markdown('<div class="section-header">2. Ananda vs El Mercado</div>', unsafe_allow_html=True)
+# --- SECCIÓN 2: MERCADO & PRECIO (LA OFERTA) ---
+st.markdown('<div class="section-title">2. Ananda vs El Mercado</div>', unsafe_allow_html=True)
+
+# BLOQUE DE PRECIO IRRESISTIBLE
+c1, c2, c3 = st.columns(3)
+with c1: st.markdown(f"""<div class="fin-card"><div class="fin-label">Precio de Lista</div><div class="fin-val">${precio_lista_base:,.0f}</div></div>""", unsafe_allow_html=True)
+with c2: st.markdown(f"""<div class="fin-card"><div class="fin-label">Tu Descuento ({descuento_pct*100:.1f}%)</div><div class="fin-discount">-${monto_descuento:,.0f}</div></div>""", unsafe_allow_html=True)
+with c3: st.markdown(f"""<div class="fin-card" style="border: 2px solid #28a745; background:#f0fff4"><div class="fin-label">PRECIO FINAL</div><div class="fin-final">${precio_final_venta:,.0f}</div></div>""", unsafe_allow_html=True)
+
+st.write("") # Espacio
+
 precio_m2_ananda = precio_final_venta / m2_construccion if m2_construccion > 0 else 0
 data_comp = [
     {"Proyecto": "ANANDA", "Precio": precio_final_venta, "M2": m2_construccion, "Tipo": "Casa", "PrecioM2": precio_m2_ananda},
@@ -175,12 +201,12 @@ data_comp = [
 ]
 df_comp = pd.DataFrame(data_comp)
 
-c2a, c2b = st.columns([1, 1])
-with c2a:
-    st.markdown(f"#### Tu Precio M²: **${precio_m2_ananda:,.0f}**")
+col_comp_1, col_comp_2 = st.columns([1, 1])
+with col_comp_1:
+    st.markdown(f"#### 🏷️ Tu Precio M²: **${precio_m2_ananda:,.0f}**")
     st.markdown("""
     <table class="comp-table feature-table">
-        <tr><th>Ventajas Ananda</th></tr>
+        <tr><th>Ventajas Competitivas</th></tr>
         <tr><td><span class='check'>✔</span> Precio por M² más bajo</td></tr>
         <tr><td><span class='check'>✔</span> Privacidad (Sin vecinos arriba/abajo)</td></tr>
         <tr><td><span class='check'>✔</span> Cochera Doble</td></tr>
@@ -188,7 +214,7 @@ with c2a:
         <tr><td><span class='check'>✔</span> Dueño de Tierra + Casa</td></tr>
     </table>
     """, unsafe_allow_html=True)
-with c2b:
+with col_comp_2:
     fig_bar = go.Figure(go.Bar(
         x=df_comp.sort_values('PrecioM2')['Proyecto'], 
         y=df_comp.sort_values('PrecioM2')['PrecioM2'],
@@ -199,39 +225,61 @@ with c2b:
     fig_bar.update_layout(height=250, margin=dict(t=10,b=10), yaxis_title="$/m2")
     st.plotly_chart(fig_bar, use_container_width=True)
 
-# --- SECCIÓN 3: PLUSVALÍA (SOLICITUD ESPECÍFICA) ---
-st.markdown("---")
-st.markdown('<div class="section-header">3. Proyección de Plusvalía y Cierre</div>', unsafe_allow_html=True)
+# --- SECCIÓN 3: PLUSVALÍA & PATRIMONIO TOTAL ---
+st.markdown('<div class="section-title">3. Proyección de Plusvalía y Patrimonio</div>', unsafe_allow_html=True)
 
-# Cálculos 5 Años
+# Variables Proyección (Default para gráfica)
+tarifa_base = 4500
+ocupacion_base = 0.45
+inflacion = 0.05
+plusvalia_anual = 0.08
 years = range(2027, 2033)
-val_prop = precio_futuro_lista10 # Inicia en valor de entrega
-data_plus = []
-for y in years:
-    data_plus.append({"Año": y, "Valor": val_prop})
-    val_prop *= 1.08 # 8% anual
-df_plus = pd.DataFrame(data_plus)
-valor_proyectado_5yr = data_plus[-1]['Valor']
 
-# 5 BLOQUES DE INFORMACIÓN
-c3_1, c3_2, c3_3, c3_4, c3_5 = st.columns(5)
-with c3_1:
-    st.markdown(f"""<div class="financial-box"><div class="label-fin">Precio Lista</div><div class="value-fin">${precio_lista_base:,.0f}</div></div>""", unsafe_allow_html=True)
-with c3_2:
-    st.markdown(f"""<div class="financial-box"><div class="label-fin">Descuento ({descuento_pct*100:.1f}%)</div><div class="value-discount">-${monto_descuento:,.0f}</div></div>""", unsafe_allow_html=True)
-with c3_3:
-    st.markdown(f"""<div class="financial-box" style="border: 2px solid #004e92;"><div class="label-fin">Precio Final</div><div class="value-fin" style="color:#004e92">${precio_final_venta:,.0f}</div></div>""", unsafe_allow_html=True)
-with c3_4:
-    st.markdown(f"""<div class="financial-box"><div class="label-fin">Plusvalía Entrega</div><div class="value-highlight">+${plusvalia_preventa:,.0f}</div><small>vs Lista 10</small></div>""", unsafe_allow_html=True)
-with c3_5:
-    st.markdown(f"""<div class="financial-box" style="background:#f9fff9;"><div class="label-fin">Valor Año 5</div><div class="value-highlight">${valor_proyectado_5yr:,.0f}</div><small>Patrimonio 2032</small></div>""", unsafe_allow_html=True)
+data_proy = []
+val_prop = precio_futuro_lista10 # Empieza en valor lista 10
+acum_rentas = 0
 
-st.write("")
-st.caption("*La 'Plusvalía a la Entrega' es la diferencia entre tu Precio Final con descuento hoy y el Precio de Lista 10 (Entrega).")
+for i, y in enumerate(years):
+    # Rentas (Estimadas para la gráfica acumulada)
+    t_act = tarifa_base * ((1+inflacion)**i)
+    neto_anual_est = (t_act * 365 * ocupacion_base) * 0.70 # 70% neto aprox
+    if y > 2027: # Empieza a rentar al entregar
+        acum_rentas += neto_anual_est
+    
+    data_proy.append({
+        "Año": y, 
+        "Valor Propiedad": val_prop, 
+        "Renta Acumulada": acum_rentas,
+        "Total Patrimonio": val_prop + acum_rentas
+    })
+    val_prop *= (1 + plusvalia_anual)
 
-# --- SECCIÓN 4: SIMULADOR DE RENTAS (MEJORADO) ---
-st.markdown("---")
-st.markdown('<div class="section-header">4. Simulador de Negocio (Rentas)</div>', unsafe_allow_html=True)
+df_proy = pd.DataFrame(data_proy)
+valor_final_5y = df_proy.iloc[-1]['Valor Propiedad']
+
+col_plus_1, col_plus_2 = st.columns([2, 1])
+with col_plus_1:
+    fig_area = px.area(df_proy, x="Año", y=["Valor Propiedad", "Renta Acumulada"], 
+                      title="Crecimiento Total (Valor Casa + Rentas)",
+                      color_discrete_map={"Valor Propiedad":"#004e92", "Renta Acumulada":"#28a745"})
+    fig_area.update_layout(plot_bgcolor='rgba(0,0,0,0)', legend_title_text='')
+    st.plotly_chart(fig_area, use_container_width=True)
+with col_plus_2:
+    st.markdown(f"""
+    <div class="fin-card" style="margin-bottom:15px;">
+        <div class="fin-label">Plusvalía a la Entrega (2027)</div>
+        <div class="fin-val" style="color:#28a745">+${plusvalia_preventa:,.0f}</div>
+        <small>Ganancia vs Lista 10</small>
+    </div>
+    <div class="fin-card" style="background:#f9f9f9;">
+        <div class="fin-label">Valor Propiedad (2032)</div>
+        <div class="fin-val">${valor_final_5y:,.0f}</div>
+        <small>Proyección 5 Años</small>
+    </div>
+    """, unsafe_allow_html=True)
+
+# --- SECCIÓN 4: RENTAS ---
+st.markdown('<div class="section-title">4. Simulador de Negocio (Rentas)</div>', unsafe_allow_html=True)
 
 c4a, c4b = st.columns([1, 2])
 with c4a:
@@ -240,7 +288,7 @@ with c4a:
     ocupacion = st.slider("Ocupación Anual %:", 20, 80, 45) / 100
     st.markdown("##### Gastos")
     admin_pct = st.slider("Comisión Administración %:", 15, 30, 25) / 100
-    gastos_fijos = st.number_input("Total Gastos Fijos (Luz/Agua/Net) $:", value=3000, step=500)
+    gastos_fijos = st.number_input("Gastos Fijos Mensuales (Luz/Net) $:", value=3000, step=500)
 
 with c4b:
     ingreso_bruto = tarifa * 365 * ocupacion
@@ -250,13 +298,11 @@ with c4b:
     neto_bolsillo = ingreso_bruto - total_gastos
     roi = (neto_bolsillo / precio_final_venta) * 100
     
-    # Métricas
     m1, m2, m3 = st.columns(3)
     m1.metric("Ingreso Bruto", f"${ingreso_bruto:,.0f}")
     m2.metric("Total Gastos", f"-${total_gastos:,.0f}")
     m3.metric("UTILIDAD NETA", f"${neto_bolsillo:,.0f}", delta=f"ROI {roi:.1f}%")
     
-    # Gráfica Pastel
     fig_pie = go.Figure(data=[go.Pie(
         labels=['Tu Ganancia', 'Comisión Admin', 'Servicios/Gastos'],
         values=[neto_bolsillo, gasto_admin, gasto_servicios],
@@ -266,28 +312,32 @@ with c4b:
     fig_pie.update_layout(height=250, margin=dict(t=0,b=0,l=0,r=0))
     st.plotly_chart(fig_pie, use_container_width=True)
 
-# --- SECCIÓN 5: PLAN DE PAGOS (SOLO VISUALIZACIÓN) ---
-st.markdown("---")
-st.markdown('<div class="section-header">5. Tu Plan de Inversión</div>', unsafe_allow_html=True)
+# --- SECCIÓN 5: PLAN DE INVERSIÓN ---
+st.markdown('<div class="section-title">5. Plan de Inversión</div>', unsafe_allow_html=True)
 cp1, cp2 = st.columns(2)
 with cp1:
     st.markdown(f"""
-    <div style="background:#e3f2fd; padding:20px; border-radius:10px; text-align:center;">
-        <div style="color:#666; font-size:14px;">ENGANCHE ({enganche_pct}%)</div>
-        <div style="font-size:28px; font-weight:bold; color:#004e92;">${monto_enganche:,.2f}</div>
-        <div style="margin-top:10px;">{plazo_meses} Mensualidades de: <b>${mensualidad:,.2f}</b></div>
+    <div style="background:#e3f2fd; padding:20px; border-radius:10px; text-align:center; border:1px solid #90caf9;">
+        <div style="color:#004e92; font-weight:bold;">ENGANCHE ({enganche_pct}%)</div>
+        <div style="font-size:32px; font-weight:900; color:#004e92;">${monto_enganche:,.2f}</div>
+        <div style="margin-top:15px; font-size:16px;">
+            {plazo_meses} Mensualidades de:<br>
+            <b style="font-size:22px; color:#d63384;">${mensualidad:,.2f}</b>
+        </div>
     </div>
     """, unsafe_allow_html=True)
 with cp2:
     st.markdown(f"""
-    <div style="background:#fff3cd; padding:20px; border-radius:10px; text-align:center;">
-        <div style="color:#666; font-size:14px;">SALDO FINAL (FEB 2027)</div>
-        <div style="font-size:28px; font-weight:bold; color:#856404;">${saldo_final:,.2f}</div>
-        <div style="margin-top:10px;">Contra Entrega / Crédito Hipotecario</div>
+    <div style="background:#fff3cd; padding:20px; border-radius:10px; text-align:center; border:1px solid #ffeeba;">
+        <div style="color:#856404; font-weight:bold;">SALDO FINAL (FEB 2027)</div>
+        <div style="font-size:32px; font-weight:900; color:#856404;">${saldo_final:,.2f}</div>
+        <div style="margin-top:15px; font-size:14px; color:#856404;">
+            Pago Contra Entrega o Crédito Hipotecario
+        </div>
     </div>
     """, unsafe_allow_html=True)
 
-# --- GENERACIÓN PDF (BRIEF DE VENTA) ---
+# --- PDF GENERATOR (BRIEF DE VENTA) ---
 class PDF(FPDF):
     def header(self):
         try: self.image('logo.png', 10, 8, 30)
@@ -308,112 +358,119 @@ def create_pdf():
     pdf.set_auto_page_break(auto=True, margin=10)
     pdf.add_page()
     
-    # 1. HEADER DATOS
+    # 1. HEADER
     pdf.set_font('Arial', '', 9)
     pdf.set_text_color(50)
     pdf.cell(100, 5, f'Cliente: {cliente_nombre if cliente_nombre else "_________________"}', 0, 0)
     pdf.cell(0, 5, f'Fecha: {date.today().strftime("%d/%m/%Y")}', 0, 1, 'R')
     pdf.cell(100, 5, f'Asesor: {asesor_nombre if asesor_nombre else "_________________"}', 0, 0)
-    pdf.set_font('Arial', 'B', 9)
+    pdf.set_font('Arial', 'B', 10)
     pdf.set_text_color(0, 78, 146)
-    pdf.cell(0, 5, f'LOTE {num_lote_selec} ({m2_terreno:.0f}m2 T / {m2_construccion:.0f}m2 C)', 0, 1, 'R')
+    pdf.cell(0, 5, f'LOTE {num_lote_selec} ({m2_terreno:.0f}m2)', 0, 1, 'R')
     pdf.ln(5)
 
-    # 2. EL TRATO (FINANCIERO)
+    # 2. SECCION PRECIOS (NUEVA)
     pdf.set_fill_color(0, 78, 146)
     pdf.set_text_color(255)
     pdf.set_font('Arial', 'B', 10)
-    pdf.cell(0, 6, ' 1. OPORTUNIDAD DE PREVENTA', 0, 1, 'L', 1)
+    pdf.cell(0, 6, ' 1. OFERTA DE PREVENTA', 0, 1, 'L', 1)
     
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 9)
     pdf.ln(2)
-    pdf.cell(70, 6, 'Precio de Lista Base:', 0)
-    pdf.cell(30, 6, f"${precio_lista_base:,.0f}", 0, 1, 'R')
+    pdf.cell(60, 6, 'Precio Lista:', 0)
+    pdf.cell(40, 6, f"${precio_lista_base:,.0f}", 0, 1, 'R')
     pdf.ln()
-    pdf.set_text_color(220, 53, 69) # Rojo descuento
-    pdf.cell(70, 6, f"Descuento ({descuento_pct*100:.1f}%):", 0)
-    pdf.cell(30, 6, f"-${monto_descuento:,.0f}", 0, 1, 'R')
+    pdf.set_text_color(220, 53, 69)
+    pdf.cell(60, 6, f"Descuento ({descuento_pct*100:.1f}%):", 0)
+    pdf.cell(40, 6, f"-${monto_descuento:,.0f}", 0, 1, 'R')
     pdf.ln()
-    pdf.set_text_color(0, 78, 146) # Azul precio final
+    pdf.set_text_color(0, 78, 146)
     pdf.set_font('Arial', 'B', 11)
-    pdf.cell(70, 6, "PRECIO FINAL:", 0)
-    pdf.cell(30, 6, f"${precio_final_venta:,.0f}", 0, 1, 'R')
+    pdf.cell(60, 6, "PRECIO FINAL:", 0)
+    pdf.cell(40, 6, f"${precio_final_venta:,.0f}", 0, 1, 'R')
     
-    # Plusvalia bloque
+    # 3. SECCION PLUSVALIA
     pdf.ln(4)
-    pdf.set_font('Arial', 'B', 9)
-    pdf.set_text_color(40, 167, 69) # Verde ganancia
-    pdf.cell(70, 6, "Plusvalia a la Entrega (vs Lista 10):", 0)
-    pdf.cell(30, 6, f"+${plusvalia_preventa:,.0f}", 0, 1, 'R')
-    pdf.cell(70, 6, "Valor Proyectado (5 Anios):", 0)
-    pdf.cell(30, 6, f"${valor_proyectado_5yr:,.0f}", 0, 1, 'R')
-    pdf.set_text_color(0)
-
-    # 3. EL NEGOCIO (RENTAS)
-    pdf.ln(5)
     pdf.set_fill_color(0, 78, 146)
     pdf.set_text_color(255)
     pdf.set_font('Arial', 'B', 10)
-    pdf.cell(0, 6, ' 2. NEGOCIO DE RENTAS (ESTIMADO)', 0, 1, 'L', 1)
+    pdf.cell(0, 6, ' 2. PROYECCION DE PLUSVALIA', 0, 1, 'L', 1)
+    
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 9)
     pdf.ln(2)
-    
-    # Datos del escenario
-    pdf.set_font('Arial', '', 8)
-    pdf.cell(0, 5, f"Base: Tarifa ${tarifa:,.0f} | Ocupacion {int(ocupacion*100)}% | Admin {int(admin_pct*100)}% | Gastos Fijos ${gastos_fijos:,.0f}/mes", 0, 1)
-    pdf.ln(1)
-    
-    # Tabla simple
-    pdf.set_font('Arial', '', 9)
-    pdf.cell(50, 6, f"Ingreso Bruto Anual:", 0)
-    pdf.cell(30, 6, f"${ingreso_bruto:,.0f}", 0, 1, 'R')
-    pdf.ln()
-    pdf.cell(50, 6, f"Gastos Totales:", 0)
-    pdf.cell(30, 6, f"-${total_gastos:,.0f}", 0, 1, 'R')
-    pdf.ln()
-    pdf.set_font('Arial', 'B', 10)
+    pdf.cell(60, 6, "Valor a la Entrega (2027):", 0)
+    pdf.cell(40, 6, f"${precio_futuro_lista10:,.0f}", 0, 1, 'R')
     pdf.set_text_color(40, 167, 69)
-    pdf.cell(50, 6, f"UTILIDAD NETA (Bolsillo):", 0)
-    pdf.cell(30, 6, f"${neto_bolsillo:,.0f}", 0, 1, 'R')
+    pdf.set_font('Arial', 'B', 9)
+    pdf.cell(60, 6, "Plusvalia Preventa Ganada:", 0)
+    pdf.cell(40, 6, f"+${plusvalia_preventa:,.0f}", 0, 1, 'R')
+    pdf.set_font('Arial', '', 9)
     pdf.set_text_color(0)
+    pdf.cell(60, 6, "Valor Proyectado (5 Anios):", 0)
+    pdf.cell(40, 6, f"${valor_final_5y:,.0f}", 0, 1, 'R')
 
-    # 4. FORMA DE PAGO
-    pdf.ln(5)
+    # 4. PLAN DE INVERSION (MENSUALIDADES)
+    pdf.ln(4)
     pdf.set_fill_color(0, 78, 146)
     pdf.set_text_color(255)
     pdf.set_font('Arial', 'B', 10)
-    pdf.cell(0, 6, ' 3. TU PLAN DE PAGO', 0, 1, 'L', 1)
+    pdf.cell(0, 6, ' 3. PLAN DE INVERSION', 0, 1, 'L', 1)
+    
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 9)
     pdf.ln(2)
     pdf.cell(60, 6, f"Enganche ({enganche_pct}%):", 0)
     pdf.cell(40, 6, f"${monto_enganche:,.0f}", 0, 1, 'R')
+    
     if plazo_meses > 0:
-        pdf.cell(60, 6, f"Mensualidades ({plazo_meses}):", 0)
+        pdf.set_font('Arial', 'B', 9)
+        pdf.cell(60, 6, f"MENSUALIDAD ({plazo_meses} Meses):", 0)
         pdf.cell(40, 6, f"${mensualidad:,.0f}", 0, 1, 'R')
-    pdf.ln()
-    pdf.set_font('Arial', 'B', 9)
+    
+    pdf.set_font('Arial', '', 9)
     pdf.cell(60, 6, f"Saldo Final (Feb 2027):", 0)
     pdf.cell(40, 6, f"${saldo_final:,.0f}", 0, 1, 'R')
 
-    # 5. VENTAJAS
-    pdf.ln(5)
+    # 5. RENTAS
+    pdf.ln(4)
+    pdf.set_fill_color(0, 78, 146)
+    pdf.set_text_color(255)
+    pdf.set_font('Arial', 'B', 10)
+    pdf.cell(0, 6, ' 4. NEGOCIO RENTAS (ESTIMADO)', 0, 1, 'L', 1)
+    pdf.set_text_color(0)
+    pdf.set_font('Arial', '', 9)
+    pdf.ln(1)
+    
+    pdf.cell(50, 6, f"Ingreso Bruto Anual:", 0)
+    pdf.cell(30, 6, f"${ingreso_bruto:,.0f}", 0, 1, 'R')
+    pdf.ln()
+    pdf.cell(50, 6, f"Gastos (Admin {int(admin_pct*100)}% + Serv.):", 0)
+    pdf.cell(30, 6, f"-${total_gastos:,.0f}", 0, 1, 'R')
+    pdf.ln()
+    pdf.set_font('Arial', 'B', 10)
+    pdf.set_text_color(40, 167, 69)
+    pdf.cell(50, 6, f"UTILIDAD NETA:", 0)
+    pdf.cell(30, 6, f"${neto_bolsillo:,.0f}", 0, 1, 'R')
+    pdf.set_text_color(0)
+
+    # 6. VENTAJAS
+    pdf.ln(4)
     pdf.set_font('Arial', 'B', 10)
     pdf.set_text_color(0, 78, 146)
     pdf.cell(0, 6, ' VENTAJAS EXCLUSIVAS', 0, 1)
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 8)
     
-    features = ["Precio por M2 mas bajo", "Privacidad (Sin vecinos arriba/abajo)", "Cochera Doble", "Mantenimiento Bajo", "Duenio de Tierra + Casa"]
+    features = ["Precio por M2 mas bajo", "Privacidad Total", "Cochera Doble", "Mantenimiento Bajo", "Duenio de Tierra + Casa"]
     for i in range(0, len(features), 2):
         t1 = f"- {features[i]}"
         try: t2 = f"- {features[i+1]}" if i+1 < len(features) else ""
         except: t2 = ""
         pdf.cell(90, 5, t1.encode('latin-1', 'replace').decode('latin-1'), 0, 0)
         pdf.cell(90, 5, t2.encode('latin-1', 'replace').decode('latin-1'), 0, 1)
-    
+
     # FOOTER
     pdf.ln(5)
     pdf.set_font('Arial', 'B', 9)
