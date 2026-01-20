@@ -129,7 +129,7 @@ df_raw = load_data()
 if df_raw is None: df_raw = pd.DataFrame({'lote': range(1, 45), 'status': ['Disponible']*44})
 
 # ==============================================================================
-# 🟦 BARRA LATERAL
+# 🟦 BARRA LATERAL (CONFIGURACIÓN)
 # ==============================================================================
 try: st.sidebar.image("logo.png", use_column_width=True)
 except: st.sidebar.header("💎 PREVENTA Ananda")
@@ -205,6 +205,7 @@ st.markdown("""
 # --- SECCIÓN 2: MERCADO & PRECIO ---
 st.markdown('<div class="section-title">2. Ananda vs El Mercado</div>', unsafe_allow_html=True)
 
+# BLOQUE DE PRECIO (4 COLUMNAS)
 c1, c2, c3, c4 = st.columns(4)
 with c1: st.markdown(f"""<div class="fin-card"><div class="fin-label">Precio de Lista</div><div class="fin-val">${precio_lista_base:,.0f}</div></div>""", unsafe_allow_html=True)
 with c2: st.markdown(f"""<div class="fin-card"><div class="fin-label">Tu Descuento ({descuento_pct*100:.1f}%)</div><div class="fin-discount">-${monto_descuento:,.0f}</div></div>""", unsafe_allow_html=True)
@@ -274,6 +275,8 @@ for i, y in enumerate(years):
 
 df_proy = pd.DataFrame(data_proy)
 valor_final_5y = df_proy.iloc[-1]['Valor Propiedad']
+neto_bolsillo_est = data_proy[1]['Renta Acumulada'] # Primer año de renta completo
+roi_est = (neto_bolsillo_est / precio_final_venta) * 100
 
 col_plus_1, col_plus_2 = st.columns([2, 1])
 with col_plus_1:
@@ -314,12 +317,12 @@ with c4b:
     gasto_servicios = gastos_fijos * 12
     total_gastos = gasto_admin + gasto_servicios
     neto_bolsillo = ingreso_bruto - total_gastos
-    roi = (neto_bolsillo / precio_final_venta) * 100
+    roi_renta = (neto_bolsillo / precio_final_venta) * 100
     
     m1, m2, m3 = st.columns(3)
     m1.metric("Ingreso Bruto", f"${ingreso_bruto:,.0f}")
     m2.metric("Total Gastos", f"-${total_gastos:,.0f}")
-    m3.metric("UTILIDAD NETA", f"${neto_bolsillo:,.0f}", delta=f"ROI {roi:.1f}%")
+    m3.metric("UTILIDAD NETA", f"${neto_bolsillo:,.0f}", delta=f"ROI {roi_renta:.1f}%")
     
     fig_pie = go.Figure(data=[go.Pie(
         labels=['Tu Ganancia', 'Comisión Admin', 'Servicios/Gastos'],
@@ -410,7 +413,7 @@ def create_pdf():
 
     # 2. BLOQUE AZUL: DATOS FINANCIEROS
     pdf.set_fill_color(240, 248, 255) # Azul muy claro
-    pdf.rect(10, pdf.get_y(), 190, 35, 'F')
+    pdf.rect(10, pdf.get_y(), 190, 40, 'F')
     pdf.set_y(pdf.get_y() + 5)
     
     pdf.set_font('Arial', '', 11)
@@ -426,6 +429,11 @@ def create_pdf():
     pdf.set_font('Arial', 'B', 14)
     pdf.cell(100, 10, 'PRECIO FINAL:', 0, 0, 'L')
     pdf.cell(80, 10, f"${precio_final_venta:,.2f}", 0, 1, 'R')
+    
+    pdf.set_text_color(0)
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(100, 6, 'Precio a la Entrega (Lista 10):', 0, 0, 'L')
+    pdf.cell(80, 6, f"${precio_futuro_lista10:,.2f}", 0, 1, 'R')
     pdf.ln(5)
 
     # 3. PLAN DE PAGO
@@ -469,6 +477,28 @@ def create_pdf():
     pdf.set_text_color(255)
     pdf.set_font('Arial', 'B', 12)
     pdf.cell(0, 12, f' LIQUIDACION FINAL: ${saldo_final:,.2f} (FEBRERO 2027)', 0, 1, 'C', 1)
+    
+    # 6. NEGOCIO
+    pdf.ln(8)
+    pdf.set_text_color(0, 78, 146)
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(0, 8, 'PROYECCION DE NEGOCIO', 0, 1, 'L')
+    pdf.set_text_color(0)
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(100, 6, "Plusvalia a la Entrega:", 0, 0)
+    pdf.set_text_color(40, 167, 69)
+    pdf.cell(80, 6, f"+${plusvalia_preventa:,.2f}", 0, 1, 'R')
+    pdf.set_text_color(0)
+    pdf.cell(100, 6, "Valor Proyectado (5 Anios):", 0, 0)
+    pdf.cell(80, 6, f"${valor_final_5y:,.2f}", 0, 1, 'R')
+    pdf.cell(100, 6, "Utilidad Renta Anual Estimada:", 0, 0)
+    pdf.cell(80, 6, f"${neto_bolsillo:,.2f} (ROI {roi_renta:.1f}%)", 0, 1, 'R')
+    
+    # Disclaimer footer
+    pdf.ln(5)
+    pdf.set_font('Arial', 'I', 8)
+    pdf.set_text_color(100)
+    pdf.multi_cell(0, 5, "Nota: Precios sujetos a cambios sin previo aviso. Las proyecciones son estimadas y no garantizan rendimientos futuros.", 0, 'C')
 
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
