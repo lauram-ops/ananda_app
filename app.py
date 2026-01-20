@@ -49,6 +49,47 @@ st.markdown("""
     .specs-item { background: #fff; padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #004e92; border: 1px solid #004e92; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
     .stButton>button { background-color: #004e92; color: white; font-weight: bold; width: 100%; border-radius: 8px; height: 50px;}
+    
+    /* Nuevos Estilos para la Sección de Pagos */
+    .payment-card {
+        background-color: white;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        border: 1px solid #eef2f6;
+    }
+    .payment-title {
+        color: #6c757d;
+        font-size: 14px;
+        font-weight: 700;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }
+    .payment-amount {
+        color: #004e92;
+        font-size: 36px;
+        font-weight: 900;
+        margin-bottom: 10px;
+    }
+    .payment-subtitle {
+        color: #00c6ff;
+        font-size: 14px;
+        font-weight: 600;
+    }
+    .payment-table-header {
+        background-color: #004e92;
+        color: white;
+        padding: 12px;
+        text-align: left;
+        font-weight: bold;
+    }
+    .payment-table-row {
+        background-color: white;
+        border-bottom: 1px solid #eee;
+        padding: 12px;
+        text-align: left;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -113,7 +154,7 @@ if df_raw is None: df_raw = pd.DataFrame({'lote': range(1, 45), 'status': ['Disp
 # 🟦 BARRA LATERAL (CONFIGURACIÓN)
 # ==============================================================================
 try: st.sidebar.image("logo.png", use_column_width=True)
-except: st.sidebar.header("💎 ANANDA KINO")
+except: st.sidebar.header("💎 PREVENTA Ananda")
 
 st.sidebar.markdown(f"📅 **{date.today().strftime('%d/%m/%Y')}**")
 cliente_nombre = st.sidebar.text_input("Cliente:", value="")
@@ -164,11 +205,11 @@ st.sidebar.info(f"📋 **Lote {num_lote_selec}:** {m2_terreno:.0f}m² T | {m2_co
 # ==============================================================================
 # 📄 CUERPO PRINCIPAL
 # ==============================================================================
-st.title(f"💎 PREVENTA | Lote {num_lote_selec}")
+st.title(f"💎 PREVENTA Ananda | Lote {num_lote_selec}")
 if "Vendido" in lote_str_selec: st.error("⛔ ESTE LOTE YA ESTÁ VENDIDO")
 
 # --- SECCIÓN 1: ESPECIFICACIONES ---
-st.markdown('<div class="section-title">1. Residencia Ananda</div>', unsafe_allow_html=True)
+st.markdown('<div class="section-title">1. 44 casas en Bahía Kino</div>', unsafe_allow_html=True)
 st.markdown("""
 <ul class="specs-list">
     <li class="specs-item">🛏️ 3 Recámaras</li>
@@ -188,7 +229,7 @@ st.markdown('<div class="section-title">2. Ananda vs El Mercado</div>', unsafe_a
 c1, c2, c3 = st.columns(3)
 with c1: st.markdown(f"""<div class="fin-card"><div class="fin-label">Precio de Lista</div><div class="fin-val">${precio_lista_base:,.0f}</div></div>""", unsafe_allow_html=True)
 with c2: st.markdown(f"""<div class="fin-card"><div class="fin-label">Tu Descuento ({descuento_pct*100:.1f}%)</div><div class="fin-discount">-${monto_descuento:,.0f}</div></div>""", unsafe_allow_html=True)
-with c3: st.markdown(f"""<div class="fin-card" style="border: 2px solid #28a745; background:#f0fff4"><div class="fin-label">PRECIO FINAL</div><div class="fin-final">${precio_final_venta:,.0f}</div></div>""", unsafe_allow_html=True)
+with c3: st.markdown(f"""<div class="fin-card" style="border: 2px solid #28a745; background:#f0fff4"><div class="fin-label">PRECIO FINAL A LA ENTREGA</div><div class="fin-final">${precio_final_venta:,.0f}</div></div>""", unsafe_allow_html=True)
 
 st.write("")
 
@@ -310,37 +351,54 @@ with c4b:
     fig_pie.update_layout(height=250, margin=dict(t=0,b=0,l=0,r=0))
     st.plotly_chart(fig_pie, use_container_width=True)
 
-# --- SECCIÓN 5: PLAN DE INVERSIÓN (3 CARDS) ---
+# --- SECCIÓN 5: PLAN DE INVERSIÓN (NUEVO DISEÑO) ---
 st.markdown('<div class="section-title">5. Plan de Inversión</div>', unsafe_allow_html=True)
 
-pay1, pay2, pay3 = st.columns(3)
+col_izq, col_der = st.columns([1, 1])
 
-with pay1:
+with col_izq:
     st.markdown(f"""
-    <div style="background:#e3f2fd; padding:15px; border-radius:10px; text-align:center; border:1px solid #90caf9; height:100%;">
-        <div style="color:#004e92; font-weight:bold; margin-bottom:5px;">ENGANCHE ({enganche_pct}%)</div>
-        <div style="font-size:24px; font-weight:900; color:#004e92;">${monto_enganche:,.0f}</div>
-        <small>Pago Inicial</small>
-    </div>
+        <div class="payment-card">
+            <div class="payment-title">ENGANCHE TOTAL ({enganche_pct}%)</div>
+            <div class="payment-amount">${monto_enganche:,.2f}</div>
+            <div class="payment-subtitle">A pagar en {plazo_meses} meses</div>
+        </div>
     """, unsafe_allow_html=True)
 
-with pay2:
+with col_der:
     st.markdown(f"""
-    <div style="background:#f3e5f5; padding:15px; border-radius:10px; text-align:center; border:1px solid #ce93d8; height:100%;">
-        <div style="color:#6a1b9a; font-weight:bold; margin-bottom:5px;">MENSUALIDADES ({plazo_meses})</div>
-        <div style="font-size:24px; font-weight:900; color:#6a1b9a;">${mensualidad:,.0f}</div>
-        <small>Monto por Mes</small>
-    </div>
+        <div class="payment-card">
+            <div class="payment-title">LIQUIDACIÓN FINAL</div>
+            <div class="payment-amount" style="color:#2c3e50">${saldo_final:,.2f}</div>
+            <div class="payment-subtitle" style="color:#7f8c8d">Contra Entrega (Febrero 2027)</div>
+        </div>
     """, unsafe_allow_html=True)
 
-with pay3:
-    st.markdown(f"""
-    <div style="background:#fff3cd; padding:15px; border-radius:10px; text-align:center; border:1px solid #ffeeba; height:100%;">
-        <div style="color:#856404; font-weight:bold; margin-bottom:5px;">SALDO FINAL</div>
-        <div style="font-size:24px; font-weight:900; color:#856404;">${saldo_final:,.0f}</div>
-        <small>Contra Entrega / Crédito</small>
-    </div>
-    """, unsafe_allow_html=True)
+if plazo_meses > 0:
+    st.markdown("### 📅 Desglose de Mensualidades")
+    
+    # Crear tabla HTML
+    html_table = """
+    <table style="width:100%; border-collapse: collapse; margin-top: 20px;">
+        <thead>
+            <tr style="background-color: #004e92; color: white;">
+                <th style="padding: 12px; text-align: left;">#</th>
+                <th style="padding: 12px; text-align: left;">Concepto</th>
+                <th style="padding: 12px; text-align: right;">Monto</th>
+            </tr>
+        </thead>
+        <tbody>
+    """
+    for i in range(1, plazo_meses + 1):
+        html_table += f"""
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px;">{i}</td>
+                <td style="padding: 12px;">Mensualidad Enganche</td>
+                <td style="padding: 12px; text-align: right; font-weight: bold;">${mensualidad:,.2f}</td>
+            </tr>
+        """
+    html_table += "</tbody></table>"
+    st.markdown(html_table, unsafe_allow_html=True)
 
 # --- PDF GENERATOR (BRIEF DE VENTA) ---
 class PDF(FPDF):
@@ -350,7 +408,7 @@ class PDF(FPDF):
         self.set_y(12)
         self.set_font('Arial', 'B', 14)
         self.set_text_color(0, 78, 146)
-        self.cell(0, 10, 'BRIEF DE INVERSION | PREVENTA', 0, 1, 'R')
+        self.cell(0, 10, 'COTIZACION PREVENTA ANANDA', 0, 1, 'R')
         self.ln(5)
     def footer(self):
         self.set_y(-15)
@@ -392,7 +450,7 @@ def create_pdf():
     pdf.ln()
     pdf.set_text_color(0, 78, 146)
     pdf.set_font('Arial', 'B', 11)
-    pdf.cell(60, 6, "PRECIO FINAL:", 0)
+    pdf.cell(60, 6, "PRECIO FINAL A LA ENTREGA:", 0)
     pdf.cell(40, 6, f"${precio_final_venta:,.0f}", 0, 1, 'R')
     
     # 3. SECCION PLUSVALIA
@@ -416,7 +474,7 @@ def create_pdf():
     pdf.cell(60, 6, "Valor Proyectado (5 Anios):", 0)
     pdf.cell(40, 6, f"${valor_final_5y:,.0f}", 0, 1, 'R')
 
-    # 4. PLAN DE INVERSION (3 CARDS VISUAL EN PDF)
+    # 4. PLAN DE INVERSION (NUEVO DISEÑO PDF)
     pdf.ln(4)
     pdf.set_fill_color(0, 78, 146)
     pdf.set_text_color(255)
@@ -427,7 +485,7 @@ def create_pdf():
     pdf.set_font('Arial', '', 9)
     pdf.ln(2)
     
-    # Tabla simple de pagos
+    # Tabla de pagos
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(30, 6, "CONCEPTO", 1, 0, 'C', 1)
     pdf.cell(40, 6, "DETALLE", 1, 0, 'C', 1)
@@ -437,14 +495,19 @@ def create_pdf():
     pdf.cell(40, 6, f"{enganche_pct}% del Valor", 1, 0)
     pdf.cell(30, 6, f"${monto_enganche:,.0f}", 1, 1, 'R')
     
-    if plazo_meses > 0:
-        pdf.cell(30, 6, "Mensualidad", 1, 0)
-        pdf.cell(40, 6, f"{plazo_meses} pagos mensuales", 1, 0)
-        pdf.cell(30, 6, f"${mensualidad:,.0f}", 1, 1, 'R')
-    
     pdf.cell(30, 6, "Saldo Final", 1, 0)
     pdf.cell(40, 6, "Contra Entrega", 1, 0)
     pdf.cell(30, 6, f"${saldo_final:,.0f}", 1, 1, 'R')
+    
+    if plazo_meses > 0:
+        pdf.ln(2)
+        pdf.set_font('Arial', 'B', 9)
+        pdf.cell(0, 6, "DESGLOSE DE MENSUALIDADES:", 0, 1)
+        pdf.set_font('Arial', '', 9)
+        for i in range(1, plazo_meses + 1):
+            pdf.cell(30, 6, f"Pago {i}", 1, 0, 'C')
+            pdf.cell(40, 6, "Mensualidad Enganche", 1, 0)
+            pdf.cell(30, 6, f"${mensualidad:,.0f}", 1, 1, 'R')
 
     # 5. RENTAS
     pdf.ln(4)
@@ -494,11 +557,11 @@ def create_pdf():
 
 st.markdown("---")
 c_down1, c_down2 = st.columns([3,1])
-with c_down1: st.markdown("##### 📄 Descargar Brief de Inversión")
+with c_down1: st.markdown("##### 📄 Descargar Cotización Preventa")
 with c_down2:
     try:
         pdf_bytes = create_pdf()
-        fn = f"Brief_Preventa_{cliente_nombre}_{num_lote_selec}.pdf"
+        fn = f"Cotizacion_Preventa_{cliente_nombre}_{num_lote_selec}.pdf"
         st.download_button("DESCARGAR PDF", pdf_bytes, file_name=fn, mime='application/pdf')
     except Exception as e:
         st.error(f"Error PDF: {e}")
