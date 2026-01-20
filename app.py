@@ -30,33 +30,76 @@ st.markdown("""
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
     
-    /* Cajas Financieras */
-    .fin-card { background: white; padding: 10px; border-radius: 10px; border: 1px solid #e1e5e8; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; }
+    /* Cajas Financieras (Precios) */
+    .fin-card { background: white; padding: 15px; border-radius: 10px; border: 1px solid #e1e5e8; text-align: center; box-shadow: 0 4px 8px rgba(0,0,0,0.05); height: 100%; display: flex; flex-direction: column; justify-content: center; }
     .fin-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
     .fin-val { font-size: 20px; font-weight: 900; color: #004e92; }
     .fin-discount { font-size: 18px; font-weight: 700; color: #dc3545; }
-    .fin-final { font-size: 22px; font-weight: 900; color: #28a745; }
+    .fin-final { font-size: 24px; font-weight: 900; color: #28a745; }
     .fin-future { font-size: 20px; font-weight: 900; color: #ffc107; }
 
-    /* Tarjetas de Pago */
-    .payment-card-blue { background-color: white; border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0 8px 20px rgba(0, 78, 146, 0.15); border-top: 6px solid #004e92; height: 100%; }
-    .payment-card-dark { background-color: white; border-radius: 15px; padding: 20px; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0, 0.15); border-top: 6px solid #2c3e50; height: 100%; }
-    .pay-title { font-size: 13px; color: #7f8c8d; font-weight: 700; text-transform: uppercase; margin-bottom: 5px; }
-    .pay-amount { font-size: 32px; font-weight: 900; color: #004e92; margin-bottom: 5px; }
-    .pay-amount-dark { font-size: 32px; font-weight: 900; color: #2c3e50; margin-bottom: 5px; }
-    .pay-sub { font-size: 13px; color: #00c6ff; font-weight: 600; }
+    /* Tarjetas de Pago (Grandes) */
+    .payment-box {
+        background-color: white;
+        border-radius: 15px;
+        padding: 30px;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        border: 1px solid #eee;
+        height: 100%;
+    }
+    .pay-label { color: #6c757d; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+    .pay-amount { color: #004e92; font-size: 40px; font-weight: 900; margin: 10px 0; }
+    .pay-sub { color: #00c6ff; font-size: 14px; font-weight: 600; }
 
-    /* Tablas y Listas */
-    .comp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
-    .comp-table th { background-color: #004e92; color: white; padding: 10px; text-align: center; }
-    .comp-table td { border-bottom: 1px solid #eee; padding: 8px; text-align: center; color: #444; }
-    .feature-table td { text-align: left; padding: 10px; font-weight: 500;}
-    .check { color: green; font-weight: bold; }
-    
-    .specs-list { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-    .specs-item { background: #fff; padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; color: #004e92; border: 1px solid #004e92; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    /* Estilo Tabla Mensualidades */
+    .styled-table {
+        border-collapse: collapse;
+        margin: 0;
+        font-size: 0.95em;
+        font-family: sans-serif;
+        min-width: 100%;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    .styled-table thead tr {
+        background-color: #004e92;
+        color: #ffffff;
+        text-align: left;
+    }
+    .styled-table th, .styled-table td {
+        padding: 12px 15px;
+    }
+    .styled-table tbody tr {
+        border-bottom: 1px solid #dddddd;
+        background-color: white;
+    }
+    .styled-table tbody tr:nth-of-type(even) {
+        background-color: #f8f9fa;
+    }
+    .styled-table tbody tr:last-of-type {
+        border-bottom: 2px solid #004e92;
+    }
 
-    .stButton>button { background-color: #004e92; color: white; font-weight: bold; width: 100%; border-radius: 8px; height: 50px;}
+    /* Boton PDF Azul Brillante */
+    .stDownloadButton > button {
+        background: linear-gradient(90deg, #004e92 0%, #007bff 100%);
+        color: white;
+        font-weight: 800;
+        width: 100%;
+        border-radius: 50px;
+        height: 60px;
+        border: none;
+        box-shadow: 0 4px 15px rgba(0, 78, 146, 0.4);
+        font-size: 16px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .stDownloadButton > button:hover {
+        transform: scale(1.02);
+        color: white !important;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -178,21 +221,23 @@ if "Vendido" in lote_str_selec: st.error("⛔ ESTE LOTE YA ESTÁ VENDIDO")
 # --- SECCIÓN 1: ESPECIFICACIONES ---
 st.markdown('<div class="section-title">1. 44 casas en Bahía Kino</div>', unsafe_allow_html=True)
 st.markdown("""
-<ul class="specs-list">
-    <li class="specs-item">🛏️ 3 Recámaras</li>
-    <li class="specs-item">🚿 2.5 Baños</li>
-    <li class="specs-item">🚗 Cochera Doble</li>
-    <li class="specs-item">🍳 Cocina Equipada</li>
-    <li class="specs-item">👕 Closets</li>
-    <li class="specs-item">🪟 Cancelería</li>
-    <li class="specs-item">✨ Pisos Incluidos</li>
+<div style="background:#fff; padding:15px; border-radius:10px; border:1px solid #eee; box-shadow:0 2px 5px rgba(0,0,0,0.05);">
+<ul style="list-style:none; padding:0; display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin:0;">
+    <li style="background:#e3f2fd; color:#004e92; padding:6px 12px; border-radius:15px; font-weight:bold; font-size:14px;">🛏️ 3 Recámaras</li>
+    <li style="background:#e3f2fd; color:#004e92; padding:6px 12px; border-radius:15px; font-weight:bold; font-size:14px;">🚿 2.5 Baños</li>
+    <li style="background:#e3f2fd; color:#004e92; padding:6px 12px; border-radius:15px; font-weight:bold; font-size:14px;">🚗 Cochera Doble</li>
+    <li style="background:#e3f2fd; color:#004e92; padding:6px 12px; border-radius:15px; font-weight:bold; font-size:14px;">🍳 Cocina Equipada</li>
+    <li style="background:#e3f2fd; color:#004e92; padding:6px 12px; border-radius:15px; font-weight:bold; font-size:14px;">👕 Closets</li>
+    <li style="background:#e3f2fd; color:#004e92; padding:6px 12px; border-radius:15px; font-weight:bold; font-size:14px;">🪟 Cancelería</li>
+    <li style="background:#e3f2fd; color:#004e92; padding:6px 12px; border-radius:15px; font-weight:bold; font-size:14px;">✨ Pisos Incluidos</li>
 </ul>
+</div>
 """, unsafe_allow_html=True)
 
 # --- SECCIÓN 2: MERCADO & PRECIO ---
 st.markdown('<div class="section-title">2. Ananda vs El Mercado</div>', unsafe_allow_html=True)
 
-# BLOQUE DE PRECIO (4 COLUMNAS AHORA)
+# BLOQUE DE PRECIO (4 COLUMNAS)
 c1, c2, c3, c4 = st.columns(4)
 with c1: st.markdown(f"""<div class="fin-card"><div class="fin-label">Precio de Lista</div><div class="fin-val">${precio_lista_base:,.0f}</div></div>""", unsafe_allow_html=True)
 with c2: st.markdown(f"""<div class="fin-card"><div class="fin-label">Tu Descuento ({descuento_pct*100:.1f}%)</div><div class="fin-discount">-${monto_descuento:,.0f}</div></div>""", unsafe_allow_html=True)
@@ -244,7 +289,7 @@ plusvalia_anual = 0.08
 years = range(2027, 2033)
 
 data_proy = []
-val_prop = precio_futuro_lista10 # Empieza en valor lista 10
+val_prop = precio_futuro_lista10 
 acum_rentas = 0
 
 for i, y in enumerate(years):
@@ -318,41 +363,10 @@ with c4b:
     fig_pie.update_layout(height=250, margin=dict(t=0,b=0,l=0,r=0))
     st.plotly_chart(fig_pie, use_container_width=True)
 
-# --- SECCIÓN 5: PLAN DE INVERSIÓN (DISEÑO MEJORADO) ---
+# --- SECCIÓN 5: PLAN DE INVERSIÓN (DISEÑO FINAL) ---
 st.markdown('<div class="section-title">5. Plan de Inversión</div>', unsafe_allow_html=True)
 
-col_izq, col_der = st.columns([1, 1])
-
-with col_izq:
-    st.markdown(f"""
-        <div class="payment-card-blue">
-            <div class="pay-title">ENGANCHE TOTAL ({enganche_pct}%)</div>
-            <div class="pay-amount">${monto_enganche:,.2f}</div>
-            <div class="pay-sub">A pagar en {plazo_meses} meses</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-with col_der:
-    st.markdown(f"""
-        <div class="payment-card-dark">
-            <div class="pay-title">LIQUIDACIÓN FINAL</div>
-            <div class="pay-amount-dark">${saldo_final:,.2f}</div>
-            <div class="pay-sub-dark">Contra Entrega (Febrero 2027)</div>
-        </div>
-    """, unsafe_allow_html=True)
-
-if plazo_meses > 0:
-    st.markdown("### 📅 Desglose de Mensualidades")
-    # Tabla usando Dataframe nativo para evitar errores visuales
-    df_pagos = pd.DataFrame({
-        "Mes": [f"Pago {i}" for i in range(1, plazo_meses + 1)],
-        "Concepto": ["Mensualidad Enganche"] * plazo_meses,
-        "Monto": [f"${mensualidad:,.2f}"] * plazo_meses
-    })
-    # Mostramos la tabla limpia
-    st.dataframe(df_pagos, use_container_width=True, hide_index=True)
-
-# --- PDF GENERATOR ---
+# PDF GENERATOR PREVIO PARA TENER EL BOTÓN LISTO
 class PDF(FPDF):
     def header(self):
         try: self.image('logo.png', 10, 8, 30)
@@ -372,8 +386,6 @@ def create_pdf():
     pdf = PDF()
     pdf.set_auto_page_break(auto=True, margin=10)
     pdf.add_page()
-    
-    # 1. HEADER
     pdf.set_font('Arial', '', 9)
     pdf.set_text_color(50)
     pdf.cell(100, 5, f'Cliente: {cliente_nombre if cliente_nombre else "_________________"}', 0, 0)
@@ -383,13 +395,10 @@ def create_pdf():
     pdf.set_text_color(0, 78, 146)
     pdf.cell(0, 5, f'LOTE {num_lote_selec} ({m2_terreno:.0f}m2)', 0, 1, 'R')
     pdf.ln(5)
-
-    # 2. SECCION PRECIOS
     pdf.set_fill_color(0, 78, 146)
     pdf.set_text_color(255)
     pdf.set_font('Arial', 'B', 10)
     pdf.cell(0, 6, ' 1. OFERTA DE PREVENTA', 0, 1, 'L', 1)
-    
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 9)
     pdf.ln(2)
@@ -404,21 +413,16 @@ def create_pdf():
     pdf.set_font('Arial', 'B', 11)
     pdf.cell(60, 6, "PRECIO FINAL:", 0)
     pdf.cell(40, 6, f"${precio_final_venta:,.0f}", 0, 1, 'R')
-    
-    # Precio Entrega
     pdf.ln(1)
     pdf.set_text_color(100)
     pdf.set_font('Arial', 'I', 9)
     pdf.cell(60, 6, "Precio a la Entrega (Lista 10):", 0)
     pdf.cell(40, 6, f"${precio_futuro_lista10:,.0f}", 0, 1, 'R')
-    
-    # 3. SECCION PLUSVALIA
     pdf.ln(4)
     pdf.set_fill_color(0, 78, 146)
     pdf.set_text_color(255)
     pdf.set_font('Arial', 'B', 10)
     pdf.cell(0, 6, ' 2. PROYECCION DE PLUSVALIA', 0, 1, 'L', 1)
-    
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 9)
     pdf.ln(2)
@@ -430,31 +434,24 @@ def create_pdf():
     pdf.set_text_color(0)
     pdf.cell(60, 6, "Valor Proyectado (5 Anios):", 0)
     pdf.cell(40, 6, f"${valor_final_5y:,.0f}", 0, 1, 'R')
-
-    # 4. PLAN DE INVERSION
     pdf.ln(4)
     pdf.set_fill_color(0, 78, 146)
     pdf.set_text_color(255)
     pdf.set_font('Arial', 'B', 10)
     pdf.cell(0, 6, ' 3. PLAN DE INVERSION', 0, 1, 'L', 1)
-    
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 9)
     pdf.ln(2)
-    
     pdf.set_fill_color(240, 240, 240)
     pdf.cell(30, 6, "CONCEPTO", 1, 0, 'C', 1)
     pdf.cell(40, 6, "DETALLE", 1, 0, 'C', 1)
     pdf.cell(30, 6, "MONTO", 1, 1, 'C', 1)
-    
     pdf.cell(30, 6, "Enganche", 1, 0)
     pdf.cell(40, 6, f"{enganche_pct}% del Valor", 1, 0)
     pdf.cell(30, 6, f"${monto_enganche:,.0f}", 1, 1, 'R')
-    
     pdf.cell(30, 6, "Saldo Final", 1, 0)
     pdf.cell(40, 6, "Contra Entrega", 1, 0)
     pdf.cell(30, 6, f"${saldo_final:,.0f}", 1, 1, 'R')
-    
     if plazo_meses > 0:
         pdf.ln(2)
         pdf.set_font('Arial', 'B', 9)
@@ -464,8 +461,6 @@ def create_pdf():
             pdf.cell(30, 6, f"Pago {i}", 1, 0, 'C')
             pdf.cell(40, 6, "Mensualidad Enganche", 1, 0)
             pdf.cell(30, 6, f"${mensualidad:,.0f}", 1, 1, 'R')
-
-    # 5. RENTAS
     pdf.ln(4)
     pdf.set_fill_color(0, 78, 146)
     pdf.set_text_color(255)
@@ -474,7 +469,6 @@ def create_pdf():
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 9)
     pdf.ln(1)
-    
     pdf.cell(50, 6, f"Ingreso Bruto Anual:", 0)
     pdf.cell(30, 6, f"${ingreso_bruto:,.0f}", 0, 1, 'R')
     pdf.ln()
@@ -486,38 +480,71 @@ def create_pdf():
     pdf.cell(50, 6, f"UTILIDAD NETA:", 0)
     pdf.cell(30, 6, f"${neto_bolsillo:,.0f}", 0, 1, 'R')
     pdf.set_text_color(0)
-
-    # 6. VENTAJAS
     pdf.ln(4)
     pdf.set_font('Arial', 'B', 10)
     pdf.set_text_color(0, 78, 146)
     pdf.cell(0, 6, ' VENTAJAS EXCLUSIVAS', 0, 1)
     pdf.set_text_color(0)
     pdf.set_font('Arial', '', 8)
-    
-    features = ["Precio por M2 mas bajo", "Privacidad Total", "Cochera Doble", "Mantenimiento Bajo", "Dueño de Tierra + Casa"]
+    features = ["Precio por M2 mas bajo", "Privacidad Total", "Cochera Doble", "Mantenimiento Bajo", "Duenio de Tierra + Casa"]
     for i in range(0, len(features), 2):
         t1 = f"- {features[i]}"
         try: t2 = f"- {features[i+1]}" if i+1 < len(features) else ""
         except: t2 = ""
         pdf.cell(90, 5, t1.encode('latin-1', 'replace').decode('latin-1'), 0, 0)
         pdf.cell(90, 5, t2.encode('latin-1', 'replace').decode('latin-1'), 0, 1)
-
-    # FOOTER
     pdf.ln(5)
     pdf.set_font('Arial', 'B', 9)
     pdf.set_text_color(0, 0, 255)
     pdf.cell(0, 5, 'https://anandakino.mx/', 0, 1, 'C', link='https://anandakino.mx/')
-
     return pdf.output(dest='S').encode('latin-1', 'replace')
 
-st.markdown("---")
-c_down1, c_down2 = st.columns([3,1])
-with c_down1: st.markdown("##### 📄 Descargar Cotización Preventa")
-with c_down2:
-    try:
-        pdf_bytes = create_pdf()
-        fn = f"Cotizacion_Preventa_{cliente_nombre}_{num_lote_selec}.pdf"
-        st.download_button("DESCARGAR PDF", pdf_bytes, file_name=fn, mime='application/pdf')
-    except Exception as e:
-        st.error(f"Error PDF: {e}")
+try:
+    pdf_bytes = create_pdf()
+except: pdf_bytes = None
+
+# TARJETAS DE PAGO (COLUMNAS 1 y 2)
+col_izq, col_der = st.columns([1, 1])
+with col_izq:
+    st.markdown(f"""
+        <div class="payment-box">
+            <div class="pay-label">ENGANCHE TOTAL ({enganche_pct}%)</div>
+            <div class="pay-amount">${monto_enganche:,.2f}</div>
+            <div class="pay-sub">A pagar en {plazo_meses} meses</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+with col_der:
+    st.markdown(f"""
+        <div class="payment-box" style="border-top: 6px solid #28a745;">
+            <div class="pay-label">LIQUIDACIÓN FINAL</div>
+            <div class="pay-amount" style="color:#28a745">${saldo_final:,.2f}</div>
+            <div class="pay-sub" style="color:#666">Contra Entrega (Febrero 2027)</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+st.write("")
+
+# TABLA Y BOTON (COLUMNAS DESIGUALES PARA QUE EL BOTON QUEDE A LA DERECHA)
+if plazo_meses > 0:
+    c_tabla, c_boton = st.columns([3, 1])
+    
+    with c_tabla:
+        st.markdown("### 📅 Desglose de Mensualidades")
+        # Generar HTML Limpio para la tabla
+        rows_html = ""
+        for i in range(1, plazo_meses + 1):
+            rows_html += f"<tr><td>{i}</td><td>Mensualidad Enganche</td><td style='text-align:right; font-weight:bold;'>${mensualidad:,.2f}</td></tr>"
+        
+        st.markdown(f"""
+        <table class="styled-table">
+            <thead><tr><th>#</th><th>Concepto</th><th style="text-align:right;">Monto</th></tr></thead>
+            <tbody>{rows_html}</tbody>
+        </table>
+        """, unsafe_allow_html=True)
+        
+    with c_boton:
+        st.markdown("<br><br><br>", unsafe_allow_html=True) # Espacio para bajar el botón
+        if pdf_bytes:
+            fn = f"Cotizacion_{cliente_nombre}_{num_lote_selec}.pdf"
+            st.download_button("📥 DESCARGAR COTIZACIÓN", pdf_bytes, file_name=fn, mime='application/pdf')
