@@ -164,8 +164,8 @@ else:
     base = clean_currency(row_lote[col_l1]) if col_l1 else 3300000.0
     precio_lista_base = base * (1 + 0.03 * (lista_seleccionada - 1))
 
-col_l10 = next((c for c in df_raw.columns if 'lista_10' in c), None)
-precio_futuro_lista10 = clean_currency(row_lote[col_l10]) if col_l10 else precio_lista_base * 1.30
+# --- CAMBIO SOLICITADO: FIJAR PRECIO FINAL A LA ENTREGA EN 4,300,000 ---
+precio_futuro_lista10 = 4300000.0
 
 # Financiero
 descuento_pct = obtener_descuento(plazo_meses, enganche_pct)
@@ -210,7 +210,7 @@ c1, c2, c3, c4 = st.columns(4)
 with c1: st.markdown(f"""<div class="fin-card"><div class="fin-label">Precio de Lista</div><div class="fin-val">${precio_lista_base:,.0f}</div></div>""", unsafe_allow_html=True)
 with c2: st.markdown(f"""<div class="fin-card"><div class="fin-label">Tu Descuento ({descuento_pct*100:.1f}%)</div><div class="fin-discount">-${monto_descuento:,.0f}</div></div>""", unsafe_allow_html=True)
 with c3: st.markdown(f"""<div class="fin-card" style="border: 2px solid #28a745; background:#f0fff4"><div class="fin-label">PRECIO FINAL</div><div class="fin-final">${precio_final_venta:,.0f}</div></div>""", unsafe_allow_html=True)
-with c4: st.markdown(f"""<div class="fin-card" style="background:#fffcf2"><div class="fin-label">PRECIO A LA ENTREGA (L10)</div><div class="fin-future">${precio_futuro_lista10:,.0f}</div></div>""", unsafe_allow_html=True)
+with c4: st.markdown(f"""<div class="fin-card" style="background:#fffcf2"><div class="fin-label">PRECIO FINAL A LA ENTREGA DE TODO EL PROYECTO</div><div class="fin-future">${precio_futuro_lista10:,.0f}</div></div>""", unsafe_allow_html=True)
 
 st.write("")
 
