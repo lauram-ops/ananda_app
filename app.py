@@ -352,7 +352,7 @@ with col_der:
         <div class="payment-card-dark">
             <div class="pay-title">LIQUIDACIÓN FINAL</div>
             <div class="pay-amount-dark">${saldo_final:,.2f}</div>
-            <div class="pay-sub-dark">Contra Entrega (Febrero 2027)</div>
+            <div class="pay-sub-dark">Contra Entrega (Verano 2027)</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -459,7 +459,7 @@ def create_pdf():
         pdf.cell(80, 7, f"${mensualidad:,.2f}", 0, 1, 'R')
     
     pdf.set_font('Arial', '', 11)
-    pdf.cell(100, 7, 'Saldo Final (Feb 2027):', 0, 0)
+    pdf.cell(100, 7, 'Saldo Final (Verano 2027):', 0, 0)
     pdf.cell(80, 7, f"${saldo_final:,.2f}", 0, 1, 'R')
     
     # 4. TABLA DE AMORTIZACION
@@ -484,7 +484,7 @@ def create_pdf():
     pdf.set_fill_color(44, 62, 80)
     pdf.set_text_color(255)
     pdf.set_font('Arial', 'B', 12)
-    pdf.cell(0, 12, f' LIQUIDACION FINAL: ${saldo_final:,.2f} (FEBRERO 2027)', 0, 1, 'C', 1)
+    pdf.cell(0, 12, f' LIQUIDACION FINAL: ${saldo_final:,.2f} (VERANO 2027)', 0, 1, 'C', 1)
     
     # 6. NEGOCIO & LEGAL
     pdf.ln(8)
